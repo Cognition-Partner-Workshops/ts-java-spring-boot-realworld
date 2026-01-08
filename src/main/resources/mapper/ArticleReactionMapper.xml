@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="io.spring.infrastructure.mybatis.mapper.ArticleReactionMapper">
+    <insert id="insert">
+        insert into article_reactions (article_id, user_id, reaction_type, created_at)
+        values (#{articleReaction.articleId}, #{articleReaction.userId}, #{articleReaction.reactionType}, #{articleReaction.createdAt})
+    </insert>
+    <update id="update">
+        update article_reactions
+        set reaction_type = #{articleReaction.reactionType}
+        where article_id = #{articleReaction.articleId} and user_id = #{articleReaction.userId}
+    </update>
+    <delete id="delete">
+        delete from article_reactions where article_id = #{reaction.articleId} and user_id = #{reaction.userId}
+    </delete>
+    <select id="find" resultMap="articleReaction">
+        select
+          AR.article_id articleReactionArticleId,
+          AR.user_id articleReactionUserId,
+          AR.reaction_type articleReactionType,
+          AR.created_at articleReactionCreatedAt
+          from article_reactions AR
+          where AR.article_id = #{articleId} and AR.user_id = #{userId}
+    </select>
+    <select id="countByArticleIdAndType" resultType="int">
+        select count(*)
+        from article_reactions
+        where article_id = #{articleId} and reaction_type = #{reactionType}
+    </select>
+    <resultMap id="articleReaction" type="io.spring.core.reaction.ArticleReaction">
+        <result column="articleReactionArticleId" property="articleId"/>
+        <result column="articleReactionUserId" property="userId"/>
+        <result column="articleReactionType" property="reactionType"/>
+        <result column="articleReactionCreatedAt" property="createdAt"/>
+    </resultMap>
+</mapper>
