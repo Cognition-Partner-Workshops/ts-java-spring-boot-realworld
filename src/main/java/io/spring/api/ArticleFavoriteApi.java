@@ -10,6 +10,8 @@ import io.spring.core.favorite.ArticleFavoriteRepository;
 import io.spring.core.user.User;
 import java.util.HashMap;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "articles/{slug}/favorite")
 @AllArgsConstructor
 public class ArticleFavoriteApi {
+  private static final Logger log = LoggerFactory.getLogger(ArticleFavoriteApi.class);
+
   private ArticleFavoriteRepository articleFavoriteRepository;
   private ArticleRepository articleRepository;
   private ArticleQueryService articleQueryService;
@@ -29,16 +33,19 @@ public class ArticleFavoriteApi {
   @PostMapping
   public ResponseEntity favoriteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.info("Entering favoriteArticle() with slug={}", slug);
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     ArticleFavorite articleFavorite = new ArticleFavorite(article.getId(), user.getId());
     articleFavoriteRepository.save(articleFavorite);
+    log.info("Exiting favoriteArticle()");
     return responseArticleData(articleQueryService.findBySlug(slug, user).get());
   }
 
   @DeleteMapping
   public ResponseEntity unfavoriteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.info("Entering unfavoriteArticle() with slug={}", slug);
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     articleFavoriteRepository
@@ -47,6 +54,7 @@ public class ArticleFavoriteApi {
             favorite -> {
               articleFavoriteRepository.remove(favorite);
             });
+    log.info("Exiting unfavoriteArticle()");
     return responseArticleData(articleQueryService.findBySlug(slug, user).get());
   }
 
