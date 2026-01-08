@@ -19,6 +19,7 @@ import javax.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "/articles/{slug}/comments")
 @AllArgsConstructor
@@ -42,26 +44,40 @@ public class CommentsApi {
       @PathVariable("slug") String slug,
       @AuthenticationPrincipal User user,
       @Valid @RequestBody NewCommentParam newCommentParam) {
+    log.info(
+        "Entering createComment with parameters: slug={}, userId={}",
+        slug,
+        user != null ? user.getId() : "anonymous");
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     Comment comment = new Comment(newCommentParam.getBody(), user.getId(), article.getId());
     commentRepository.save(comment);
-    return ResponseEntity.status(201)
-        .body(commentResponse(commentQueryService.findById(comment.getId(), user).get()));
+    ResponseEntity<?> response =
+        ResponseEntity.status(201)
+            .body(commentResponse(commentQueryService.findById(comment.getId(), user).get()));
+    log.info("Exiting createComment with status: {}", response.getStatusCode());
+    return response;
   }
 
   @GetMapping
   public ResponseEntity getComments(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.info(
+        "Entering getComments with parameters: slug={}, userId={}",
+        slug,
+        user != null ? user.getId() : "anonymous");
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     List<CommentData> comments = commentQueryService.findByArticleId(article.getId(), user);
-    return ResponseEntity.ok(
-        new HashMap<String, Object>() {
-          {
-            put("comments", comments);
-          }
-        });
+    ResponseEntity response =
+        ResponseEntity.ok(
+            new HashMap<String, Object>() {
+              {
+                put("comments", comments);
+              }
+            });
+    log.info("Exiting getComments with status: {}", response.getStatusCode());
+    return response;
   }
 
   @RequestMapping(path = "{id}", method = RequestMethod.DELETE)
@@ -69,19 +85,27 @@ public class CommentsApi {
       @PathVariable("slug") String slug,
       @PathVariable("id") String commentId,
       @AuthenticationPrincipal User user) {
+    log.info(
+        "Entering deleteComment with parameters: slug={}, commentId={}, userId={}",
+        slug,
+        commentId,
+        user != null ? user.getId() : "anonymous");
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
-    return commentRepository
-        .findById(article.getId(), commentId)
-        .map(
-            comment -> {
-              if (!AuthorizationService.canWriteComment(user, article, comment)) {
-                throw new NoAuthorizationException();
-              }
-              commentRepository.remove(comment);
-              return ResponseEntity.noContent().build();
-            })
-        .orElseThrow(ResourceNotFoundException::new);
+    ResponseEntity response =
+        commentRepository
+            .findById(article.getId(), commentId)
+            .map(
+                comment -> {
+                  if (!AuthorizationService.canWriteComment(user, article, comment)) {
+                    throw new NoAuthorizationException();
+                  }
+                  commentRepository.remove(comment);
+                  return ResponseEntity.noContent().build();
+                })
+            .orElseThrow(ResourceNotFoundException::new);
+    log.info("Exiting deleteComment with status: {}", response.getStatusCode());
+    return response;
   }
 
   private Map<String, Object> commentResponse(CommentData commentData) {

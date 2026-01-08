@@ -10,6 +10,7 @@ import io.spring.core.favorite.ArticleFavoriteRepository;
 import io.spring.core.user.User;
 import java.util.HashMap;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "articles/{slug}/favorite")
 @AllArgsConstructor
@@ -29,16 +31,26 @@ public class ArticleFavoriteApi {
   @PostMapping
   public ResponseEntity favoriteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.info(
+        "Entering favoriteArticle with parameters: slug={}, userId={}",
+        slug,
+        user != null ? user.getId() : "anonymous");
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     ArticleFavorite articleFavorite = new ArticleFavorite(article.getId(), user.getId());
     articleFavoriteRepository.save(articleFavorite);
-    return responseArticleData(articleQueryService.findBySlug(slug, user).get());
+    ResponseEntity response = responseArticleData(articleQueryService.findBySlug(slug, user).get());
+    log.info("Exiting favoriteArticle with status: {}", response.getStatusCode());
+    return response;
   }
 
   @DeleteMapping
   public ResponseEntity unfavoriteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.info(
+        "Entering unfavoriteArticle with parameters: slug={}, userId={}",
+        slug,
+        user != null ? user.getId() : "anonymous");
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     articleFavoriteRepository
@@ -47,7 +59,9 @@ public class ArticleFavoriteApi {
             favorite -> {
               articleFavoriteRepository.remove(favorite);
             });
-    return responseArticleData(articleQueryService.findBySlug(slug, user).get());
+    ResponseEntity response = responseArticleData(articleQueryService.findBySlug(slug, user).get());
+    log.info("Exiting unfavoriteArticle with status: {}", response.getStatusCode());
+    return response;
   }
 
   private ResponseEntity<HashMap<String, Object>> responseArticleData(

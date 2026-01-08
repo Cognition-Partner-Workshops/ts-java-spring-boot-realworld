@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.validation.Valid;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "/articles/{slug}")
 @AllArgsConstructor
@@ -35,10 +37,17 @@ public class ArticleApi {
   @GetMapping
   public ResponseEntity<?> article(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
-    return articleQueryService
-        .findBySlug(slug, user)
-        .map(articleData -> ResponseEntity.ok(articleResponse(articleData)))
-        .orElseThrow(ResourceNotFoundException::new);
+    log.info(
+        "Entering article with parameters: slug={}, userId={}",
+        slug,
+        user != null ? user.getId() : "anonymous");
+    ResponseEntity<?> response =
+        articleQueryService
+            .findBySlug(slug, user)
+            .map(articleData -> ResponseEntity.ok(articleResponse(articleData)))
+            .orElseThrow(ResourceNotFoundException::new);
+    log.info("Exiting article with status: {}", response.getStatusCode());
+    return response;
   }
 
   @PutMapping
@@ -46,36 +55,50 @@ public class ArticleApi {
       @PathVariable("slug") String slug,
       @AuthenticationPrincipal User user,
       @Valid @RequestBody UpdateArticleParam updateArticleParam) {
-    return articleRepository
-        .findBySlug(slug)
-        .map(
-            article -> {
-              if (!AuthorizationService.canWriteArticle(user, article)) {
-                throw new NoAuthorizationException();
-              }
-              Article updatedArticle =
-                  articleCommandService.updateArticle(article, updateArticleParam);
-              return ResponseEntity.ok(
-                  articleResponse(
-                      articleQueryService.findBySlug(updatedArticle.getSlug(), user).get()));
-            })
-        .orElseThrow(ResourceNotFoundException::new);
+    log.info(
+        "Entering updateArticle with parameters: slug={}, userId={}",
+        slug,
+        user != null ? user.getId() : "anonymous");
+    ResponseEntity<?> response =
+        articleRepository
+            .findBySlug(slug)
+            .map(
+                article -> {
+                  if (!AuthorizationService.canWriteArticle(user, article)) {
+                    throw new NoAuthorizationException();
+                  }
+                  Article updatedArticle =
+                      articleCommandService.updateArticle(article, updateArticleParam);
+                  return ResponseEntity.ok(
+                      articleResponse(
+                          articleQueryService.findBySlug(updatedArticle.getSlug(), user).get()));
+                })
+            .orElseThrow(ResourceNotFoundException::new);
+    log.info("Exiting updateArticle with status: {}", response.getStatusCode());
+    return response;
   }
 
   @DeleteMapping
   public ResponseEntity deleteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
-    return articleRepository
-        .findBySlug(slug)
-        .map(
-            article -> {
-              if (!AuthorizationService.canWriteArticle(user, article)) {
-                throw new NoAuthorizationException();
-              }
-              articleRepository.remove(article);
-              return ResponseEntity.noContent().build();
-            })
-        .orElseThrow(ResourceNotFoundException::new);
+    log.info(
+        "Entering deleteArticle with parameters: slug={}, userId={}",
+        slug,
+        user != null ? user.getId() : "anonymous");
+    ResponseEntity response =
+        articleRepository
+            .findBySlug(slug)
+            .map(
+                article -> {
+                  if (!AuthorizationService.canWriteArticle(user, article)) {
+                    throw new NoAuthorizationException();
+                  }
+                  articleRepository.remove(article);
+                  return ResponseEntity.noContent().build();
+                })
+            .orElseThrow(ResourceNotFoundException::new);
+    log.info("Exiting deleteArticle with status: {}", response.getStatusCode());
+    return response;
   }
 
   private Map<String, Object> articleResponse(ArticleData articleData) {

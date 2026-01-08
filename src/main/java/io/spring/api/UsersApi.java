@@ -21,12 +21,14 @@ import javax.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @AllArgsConstructor
 public class UsersApi {
@@ -38,21 +40,33 @@ public class UsersApi {
 
   @RequestMapping(path = "/users", method = POST)
   public ResponseEntity createUser(@Valid @RequestBody RegisterParam registerParam) {
+    log.info(
+        "Entering createUser with parameters: email={}, username={}",
+        registerParam.getEmail(),
+        registerParam.getUsername());
     User user = userService.createUser(registerParam);
     UserData userData = userQueryService.findById(user.getId()).get();
-    return ResponseEntity.status(201)
-        .body(userResponse(new UserWithToken(userData, jwtService.toToken(user))));
+    ResponseEntity response =
+        ResponseEntity.status(201)
+            .body(userResponse(new UserWithToken(userData, jwtService.toToken(user))));
+    log.info("Exiting createUser with status: {}", response.getStatusCode());
+    return response;
   }
 
   @RequestMapping(path = "/users/login", method = POST)
   public ResponseEntity userLogin(@Valid @RequestBody LoginParam loginParam) {
+    log.info("Entering userLogin with parameters: email={}", loginParam.getEmail());
     Optional<User> optional = userRepository.findByEmail(loginParam.getEmail());
     if (optional.isPresent()
         && passwordEncoder.matches(loginParam.getPassword(), optional.get().getPassword())) {
       UserData userData = userQueryService.findById(optional.get().getId()).get();
-      return ResponseEntity.ok(
-          userResponse(new UserWithToken(userData, jwtService.toToken(optional.get()))));
+      ResponseEntity response =
+          ResponseEntity.ok(
+              userResponse(new UserWithToken(userData, jwtService.toToken(optional.get()))));
+      log.info("Exiting userLogin with status: {}", response.getStatusCode());
+      return response;
     } else {
+      log.info("Exiting userLogin with authentication failure");
       throw new InvalidAuthenticationException();
     }
   }

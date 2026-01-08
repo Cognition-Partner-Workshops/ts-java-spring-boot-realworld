@@ -8,12 +8,14 @@ import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+@Slf4j
 @Service
 @Validated
 public class UserService {
@@ -32,6 +34,10 @@ public class UserService {
   }
 
   public User createUser(@Valid RegisterParam registerParam) {
+    log.info(
+        "Entering createUser with parameters: email={}, username={}",
+        registerParam.getEmail(),
+        registerParam.getUsername());
     User user =
         new User(
             registerParam.getEmail(),
@@ -40,10 +46,14 @@ public class UserService {
             "",
             defaultImage);
     userRepository.save(user);
+    log.info("Exiting createUser with result: userId={}", user.getId());
     return user;
   }
 
   public void updateUser(@Valid UpdateUserCommand command) {
+    log.info(
+        "Entering updateUser with parameters: userId={}",
+        command.getTargetUser() != null ? command.getTargetUser().getId() : "unknown");
     User user = command.getTargetUser();
     UpdateUserParam updateUserParam = command.getParam();
     user.update(
@@ -53,6 +63,7 @@ public class UserService {
         updateUserParam.getBio(),
         updateUserParam.getImage());
     userRepository.save(user);
+    log.info("Exiting updateUser");
   }
 }
 

@@ -17,9 +17,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class ArticleQueryService {
@@ -28,25 +30,37 @@ public class ArticleQueryService {
   private ArticleFavoritesReadService articleFavoritesReadService;
 
   public Optional<ArticleData> findById(String id, User user) {
+    log.info(
+        "Entering findById with parameters: id={}, userId={}",
+        id,
+        user != null ? user.getId() : "anonymous");
     ArticleData articleData = articleReadService.findById(id);
     if (articleData == null) {
+      log.info("Exiting findById with result: empty");
       return Optional.empty();
     } else {
       if (user != null) {
         fillExtraInfo(id, user, articleData);
       }
+      log.info("Exiting findById with result: present");
       return Optional.of(articleData);
     }
   }
 
   public Optional<ArticleData> findBySlug(String slug, User user) {
+    log.info(
+        "Entering findBySlug with parameters: slug={}, userId={}",
+        slug,
+        user != null ? user.getId() : "anonymous");
     ArticleData articleData = articleReadService.findBySlug(slug);
     if (articleData == null) {
+      log.info("Exiting findBySlug with result: empty");
       return Optional.empty();
     } else {
       if (user != null) {
         fillExtraInfo(articleData.getId(), user, articleData);
       }
+      log.info("Exiting findBySlug with result: present");
       return Optional.of(articleData);
     }
   }
@@ -57,9 +71,16 @@ public class ArticleQueryService {
       String favoritedBy,
       CursorPageParameter<DateTime> page,
       User currentUser) {
+    log.info(
+        "Entering findRecentArticlesWithCursor with parameters: tag={}, author={}, favoritedBy={}, userId={}",
+        tag,
+        author,
+        favoritedBy,
+        currentUser != null ? currentUser.getId() : "anonymous");
     List<String> articleIds =
         articleReadService.findArticlesWithCursor(tag, author, favoritedBy, page);
     if (articleIds.size() == 0) {
+      log.info("Exiting findRecentArticlesWithCursor with result: empty");
       return new CursorPager<>(new ArrayList<>(), page.getDirection(), false);
     } else {
       boolean hasExtra = articleIds.size() > page.getLimit();
@@ -73,14 +94,19 @@ public class ArticleQueryService {
       List<ArticleData> articles = articleReadService.findArticles(articleIds);
       fillExtraInfo(articles, currentUser);
 
+      log.info("Exiting findRecentArticlesWithCursor with result: {} articles", articles.size());
       return new CursorPager<>(articles, page.getDirection(), hasExtra);
     }
   }
 
   public CursorPager<ArticleData> findUserFeedWithCursor(
       User user, CursorPageParameter<DateTime> page) {
+    log.info(
+        "Entering findUserFeedWithCursor with parameters: userId={}",
+        user != null ? user.getId() : "anonymous");
     List<String> followdUsers = userRelationshipQueryService.followedUsers(user.getId());
     if (followdUsers.size() == 0) {
+      log.info("Exiting findUserFeedWithCursor with result: empty");
       return new CursorPager<>(new ArrayList<>(), page.getDirection(), false);
     } else {
       List<ArticleData> articles =
@@ -93,31 +119,48 @@ public class ArticleQueryService {
         Collections.reverse(articles);
       }
       fillExtraInfo(articles, user);
+      log.info("Exiting findUserFeedWithCursor with result: {} articles", articles.size());
       return new CursorPager<>(articles, page.getDirection(), hasExtra);
     }
   }
 
   public ArticleDataList findRecentArticles(
       String tag, String author, String favoritedBy, Page page, User currentUser) {
+    log.info(
+        "Entering findRecentArticles with parameters: tag={}, author={}, favoritedBy={}, userId={}",
+        tag,
+        author,
+        favoritedBy,
+        currentUser != null ? currentUser.getId() : "anonymous");
     List<String> articleIds = articleReadService.queryArticles(tag, author, favoritedBy, page);
     int articleCount = articleReadService.countArticle(tag, author, favoritedBy);
     if (articleIds.size() == 0) {
+      log.info("Exiting findRecentArticles with result: 0 articles, count={}", articleCount);
       return new ArticleDataList(new ArrayList<>(), articleCount);
     } else {
       List<ArticleData> articles = articleReadService.findArticles(articleIds);
       fillExtraInfo(articles, currentUser);
+      log.info(
+          "Exiting findRecentArticles with result: {} articles, count={}",
+          articles.size(),
+          articleCount);
       return new ArticleDataList(articles, articleCount);
     }
   }
 
   public ArticleDataList findUserFeed(User user, Page page) {
+    log.info(
+        "Entering findUserFeed with parameters: userId={}",
+        user != null ? user.getId() : "anonymous");
     List<String> followdUsers = userRelationshipQueryService.followedUsers(user.getId());
     if (followdUsers.size() == 0) {
+      log.info("Exiting findUserFeed with result: 0 articles, count=0");
       return new ArticleDataList(new ArrayList<>(), 0);
     } else {
       List<ArticleData> articles = articleReadService.findArticlesOfAuthors(followdUsers, page);
       fillExtraInfo(articles, user);
       int count = articleReadService.countFeedSize(followdUsers);
+      log.info("Exiting findUserFeed with result: {} articles, count={}", articles.size(), count);
       return new ArticleDataList(articles, count);
     }
   }

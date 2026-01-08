@@ -11,9 +11,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class CommentQueryService {
@@ -21,8 +23,13 @@ public class CommentQueryService {
   private UserRelationshipQueryService userRelationshipQueryService;
 
   public Optional<CommentData> findById(String id, User user) {
+    log.info(
+        "Entering findById with parameters: id={}, userId={}",
+        id,
+        user != null ? user.getId() : "anonymous");
     CommentData commentData = commentReadService.findById(id);
     if (commentData == null) {
+      log.info("Exiting findById with result: empty");
       return Optional.empty();
     } else {
       commentData
@@ -31,10 +38,15 @@ public class CommentQueryService {
               userRelationshipQueryService.isUserFollowing(
                   user.getId(), commentData.getProfileData().getId()));
     }
+    log.info("Exiting findById with result: present");
     return Optional.ofNullable(commentData);
   }
 
   public List<CommentData> findByArticleId(String articleId, User user) {
+    log.info(
+        "Entering findByArticleId with parameters: articleId={}, userId={}",
+        articleId,
+        user != null ? user.getId() : "anonymous");
     List<CommentData> comments = commentReadService.findByArticleId(articleId);
     if (comments.size() > 0 && user != null) {
       Set<String> followingAuthors =
@@ -50,13 +62,19 @@ public class CommentQueryService {
             }
           });
     }
+    log.info("Exiting findByArticleId with result: {} comments", comments.size());
     return comments;
   }
 
   public CursorPager<CommentData> findByArticleIdWithCursor(
       String articleId, User user, CursorPageParameter<DateTime> page) {
+    log.info(
+        "Entering findByArticleIdWithCursor with parameters: articleId={}, userId={}",
+        articleId,
+        user != null ? user.getId() : "anonymous");
     List<CommentData> comments = commentReadService.findByArticleIdWithCursor(articleId, page);
     if (comments.isEmpty()) {
+      log.info("Exiting findByArticleIdWithCursor with result: empty");
       return new CursorPager<>(new ArrayList<>(), page.getDirection(), false);
     }
     if (user != null) {
@@ -80,6 +98,7 @@ public class CommentQueryService {
     if (!page.isNext()) {
       Collections.reverse(comments);
     }
+    log.info("Exiting findByArticleIdWithCursor with result: {} comments", comments.size());
     return new CursorPager<>(comments, page.getDirection(), hasExtra);
   }
 }
