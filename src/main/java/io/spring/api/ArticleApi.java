@@ -2,6 +2,8 @@ package io.spring.api;
 
 import io.spring.api.exception.NoAuthorizationException;
 import io.spring.api.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.spring.application.ArticleQueryService;
 import io.spring.application.article.ArticleCommandService;
 import io.spring.application.article.UpdateArticleParam;
@@ -28,6 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/articles/{slug}")
 @AllArgsConstructor
 public class ArticleApi {
+  private static final Logger log = LoggerFactory.getLogger(ArticleApi.class);
+
   private ArticleQueryService articleQueryService;
   private ArticleRepository articleRepository;
   private ArticleCommandService articleCommandService;
@@ -35,9 +39,14 @@ public class ArticleApi {
   @GetMapping
   public ResponseEntity<?> article(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.info("Entering article() with slug={}", slug);
     return articleQueryService
         .findBySlug(slug, user)
-        .map(articleData -> ResponseEntity.ok(articleResponse(articleData)))
+        .map(
+            articleData -> {
+              log.info("Exiting article()");
+              return ResponseEntity.ok(articleResponse(articleData));
+            })
         .orElseThrow(ResourceNotFoundException::new);
   }
 
@@ -46,6 +55,7 @@ public class ArticleApi {
       @PathVariable("slug") String slug,
       @AuthenticationPrincipal User user,
       @Valid @RequestBody UpdateArticleParam updateArticleParam) {
+    log.info("Entering updateArticle() with slug={}", slug);
     return articleRepository
         .findBySlug(slug)
         .map(
@@ -55,6 +65,7 @@ public class ArticleApi {
               }
               Article updatedArticle =
                   articleCommandService.updateArticle(article, updateArticleParam);
+              log.info("Exiting updateArticle()");
               return ResponseEntity.ok(
                   articleResponse(
                       articleQueryService.findBySlug(updatedArticle.getSlug(), user).get()));
@@ -65,6 +76,7 @@ public class ArticleApi {
   @DeleteMapping
   public ResponseEntity deleteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.info("Entering deleteArticle() with slug={}", slug);
     return articleRepository
         .findBySlug(slug)
         .map(
@@ -73,6 +85,7 @@ public class ArticleApi {
                 throw new NoAuthorizationException();
               }
               articleRepository.remove(article);
+              log.info("Exiting deleteArticle()");
               return ResponseEntity.noContent().build();
             })
         .orElseThrow(ResourceNotFoundException::new);
