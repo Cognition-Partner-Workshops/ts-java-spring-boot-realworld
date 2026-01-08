@@ -3,6 +3,8 @@ package io.spring.api;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.spring.api.exception.InvalidAuthenticationException;
 import io.spring.application.UserQueryService;
 import io.spring.application.data.UserData;
@@ -30,6 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @AllArgsConstructor
 public class UsersApi {
+  private static final Logger log = LoggerFactory.getLogger(UsersApi.class);
+
   private UserRepository userRepository;
   private UserQueryService userQueryService;
   private PasswordEncoder passwordEncoder;
@@ -38,18 +42,22 @@ public class UsersApi {
 
   @RequestMapping(path = "/users", method = POST)
   public ResponseEntity createUser(@Valid @RequestBody RegisterParam registerParam) {
+    log.info("Entering createUser() with username={}", registerParam.getUsername());
     User user = userService.createUser(registerParam);
     UserData userData = userQueryService.findById(user.getId()).get();
+    log.info("Exiting createUser()");
     return ResponseEntity.status(201)
         .body(userResponse(new UserWithToken(userData, jwtService.toToken(user))));
   }
 
   @RequestMapping(path = "/users/login", method = POST)
   public ResponseEntity userLogin(@Valid @RequestBody LoginParam loginParam) {
+    log.info("Entering userLogin() with email={}", loginParam.getEmail());
     Optional<User> optional = userRepository.findByEmail(loginParam.getEmail());
     if (optional.isPresent()
         && passwordEncoder.matches(loginParam.getPassword(), optional.get().getPassword())) {
       UserData userData = userQueryService.findById(optional.get().getId()).get();
+      log.info("Exiting userLogin()");
       return ResponseEntity.ok(
           userResponse(new UserWithToken(userData, jwtService.toToken(optional.get()))));
     } else {
