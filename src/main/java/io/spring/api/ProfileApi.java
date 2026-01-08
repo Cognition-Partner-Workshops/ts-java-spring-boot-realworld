@@ -9,6 +9,8 @@ import io.spring.core.user.UserRepository;
 import java.util.HashMap;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,46 +24,60 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "profiles/{username}")
 @AllArgsConstructor
 public class ProfileApi {
+  private static final Logger log = LoggerFactory.getLogger(ProfileApi.class);
+
   private ProfileQueryService profileQueryService;
   private UserRepository userRepository;
 
   @GetMapping
   public ResponseEntity getProfile(
       @PathVariable("username") String username, @AuthenticationPrincipal User user) {
-    return profileQueryService
-        .findByUsername(username, user)
-        .map(this::profileResponse)
-        .orElseThrow(ResourceNotFoundException::new);
+    log.info("Entering getProfile() with username={}", username);
+    ResponseEntity response =
+        profileQueryService
+            .findByUsername(username, user)
+            .map(this::profileResponse)
+            .orElseThrow(ResourceNotFoundException::new);
+    log.info("Exiting getProfile()");
+    return response;
   }
 
   @PostMapping(path = "follow")
   public ResponseEntity follow(
       @PathVariable("username") String username, @AuthenticationPrincipal User user) {
-    return userRepository
-        .findByUsername(username)
-        .map(
-            target -> {
-              FollowRelation followRelation = new FollowRelation(user.getId(), target.getId());
-              userRepository.saveRelation(followRelation);
-              return profileResponse(profileQueryService.findByUsername(username, user).get());
-            })
-        .orElseThrow(ResourceNotFoundException::new);
+    log.info("Entering follow() with username={}", username);
+    ResponseEntity response =
+        userRepository
+            .findByUsername(username)
+            .map(
+                target -> {
+                  FollowRelation followRelation = new FollowRelation(user.getId(), target.getId());
+                  userRepository.saveRelation(followRelation);
+                  return profileResponse(profileQueryService.findByUsername(username, user).get());
+                })
+            .orElseThrow(ResourceNotFoundException::new);
+    log.info("Exiting follow()");
+    return response;
   }
 
   @DeleteMapping(path = "follow")
   public ResponseEntity unfollow(
       @PathVariable("username") String username, @AuthenticationPrincipal User user) {
+    log.info("Entering unfollow() with username={}", username);
     Optional<User> userOptional = userRepository.findByUsername(username);
     if (userOptional.isPresent()) {
       User target = userOptional.get();
-      return userRepository
-          .findRelation(user.getId(), target.getId())
-          .map(
-              relation -> {
-                userRepository.removeRelation(relation);
-                return profileResponse(profileQueryService.findByUsername(username, user).get());
-              })
-          .orElseThrow(ResourceNotFoundException::new);
+      ResponseEntity response =
+          userRepository
+              .findRelation(user.getId(), target.getId())
+              .map(
+                  relation -> {
+                    userRepository.removeRelation(relation);
+                    return profileResponse(profileQueryService.findByUsername(username, user).get());
+                  })
+              .orElseThrow(ResourceNotFoundException::new);
+      log.info("Exiting unfollow()");
+      return response;
     } else {
       throw new ResourceNotFoundException();
     }
