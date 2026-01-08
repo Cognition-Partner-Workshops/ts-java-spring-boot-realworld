@@ -24,7 +24,7 @@ jobs:
           cache: 'gradle'
 
       - name: Build Application
-        run: ./gradlew build -x test --no-daemon
+        run: ./gradlew spotlessApply build -x test --no-daemon
 
       - name: Start Application
         run: |
