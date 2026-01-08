@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -33,6 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/articles/{slug}/comments")
 @AllArgsConstructor
 public class CommentsApi {
+  private static final Logger log = LoggerFactory.getLogger(CommentsApi.class);
+
   private ArticleRepository articleRepository;
   private CommentRepository commentRepository;
   private CommentQueryService commentQueryService;
@@ -42,10 +46,12 @@ public class CommentsApi {
       @PathVariable("slug") String slug,
       @AuthenticationPrincipal User user,
       @Valid @RequestBody NewCommentParam newCommentParam) {
+    log.info("Entering createComment() with slug={}", slug);
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     Comment comment = new Comment(newCommentParam.getBody(), user.getId(), article.getId());
     commentRepository.save(comment);
+    log.info("Exiting createComment()");
     return ResponseEntity.status(201)
         .body(commentResponse(commentQueryService.findById(comment.getId(), user).get()));
   }
@@ -53,9 +59,11 @@ public class CommentsApi {
   @GetMapping
   public ResponseEntity getComments(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.info("Entering getComments() with slug={}", slug);
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     List<CommentData> comments = commentQueryService.findByArticleId(article.getId(), user);
+    log.info("Exiting getComments()");
     return ResponseEntity.ok(
         new HashMap<String, Object>() {
           {
@@ -69,6 +77,7 @@ public class CommentsApi {
       @PathVariable("slug") String slug,
       @PathVariable("id") String commentId,
       @AuthenticationPrincipal User user) {
+    log.info("Entering deleteComment() with slug={}, commentId={}", slug, commentId);
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     return commentRepository
@@ -79,6 +88,7 @@ public class CommentsApi {
                 throw new NoAuthorizationException();
               }
               commentRepository.remove(comment);
+              log.info("Exiting deleteComment()");
               return ResponseEntity.noContent().build();
             })
         .orElseThrow(ResourceNotFoundException::new);
