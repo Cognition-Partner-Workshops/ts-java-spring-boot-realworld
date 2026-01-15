@@ -6,6 +6,10 @@ plugins {
     id "com.diffplug.spotless" version "6.2.1"
 }
 
+ext {
+    set('springCloudVersion', "2021.0.1")
+}
+
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 targetCompatibility = '11'
@@ -42,7 +46,26 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.2',
                 'io.jsonwebtoken:jjwt-jackson:0.11.2'
     implementation 'joda-time:joda-time:2.10.13'
-    implementation 'org.xerial:sqlite-jdbc:3.36.0.3'
+    
+    // Database - PostgreSQL (replacing SQLite for microservices support)
+    implementation 'org.postgresql:postgresql:42.3.3'
+    
+    // Spring Cloud Config - Centralized configuration management
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'
+    
+    // Service Discovery - Eureka client
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    
+    // Distributed Tracing - Sleuth and Zipkin
+    implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
+    implementation 'org.springframework.cloud:spring-cloud-sleuth-zipkin'
+    
+    // Inter-service Communication - OpenFeign
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    
+    // Circuit Breaker - Resilience4j (version managed by Spring Cloud BOM)
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -54,6 +77,15 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:2.2.2'
+    
+    // H2 for testing (in-memory database) - using 1.4.200 for Flyway compatibility
+    testImplementation 'com.h2database:h2:1.4.200'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
 }
 
 tasks.named('test') {
