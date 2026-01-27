@@ -31,6 +31,7 @@ public class ArticleMutation {
   private ArticleCommandService articleCommandService;
   private ArticleFavoriteRepository articleFavoriteRepository;
   private ArticleRepository articleRepository;
+  private AuthorizationService authorizationService;
 
   @DgsMutation(field = MUTATION.CreateArticle)
   public DataFetcherResult<ArticlePayload> createArticle(
@@ -56,7 +57,7 @@ public class ArticleMutation {
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     User user = SecurityUtil.getCurrentUser().orElseThrow(AuthenticationException::new);
-    if (!AuthorizationService.canWriteArticle(user, article)) {
+    if (!authorizationService.canWriteArticle(user, article)) {
       throw new NoAuthorizationException();
     }
     article =
@@ -105,7 +106,7 @@ public class ArticleMutation {
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
 
-    if (!AuthorizationService.canWriteArticle(user, article)) {
+    if (!authorizationService.canWriteArticle(user, article)) {
       throw new NoAuthorizationException();
     }
 

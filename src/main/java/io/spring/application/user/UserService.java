@@ -46,10 +46,14 @@ public class UserService {
   public void updateUser(@Valid UpdateUserCommand command) {
     User user = command.getTargetUser();
     UpdateUserParam updateUserParam = command.getParam();
+    String encodedPassword =
+        updateUserParam.getPassword() != null && !updateUserParam.getPassword().isEmpty()
+            ? passwordEncoder.encode(updateUserParam.getPassword())
+            : null;
     user.update(
         updateUserParam.getEmail(),
         updateUserParam.getUsername(),
-        updateUserParam.getPassword(),
+        encodedPassword,
         updateUserParam.getBio(),
         updateUserParam.getImage());
     userRepository.save(user);
@@ -62,9 +66,9 @@ public class UserService {
 
   String message() default "invalid update param";
 
-  Class[] groups() default {};
+  Class<?>[] groups() default {};
 
-  Class[] payload() default {};
+  Class<?>[] payload() default {};
 }
 
 class UpdateUserValidator implements ConstraintValidator<UpdateUserConstraint, UpdateUserCommand> {

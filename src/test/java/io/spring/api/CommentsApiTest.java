@@ -17,6 +17,7 @@ import io.spring.core.article.Article;
 import io.spring.core.article.ArticleRepository;
 import io.spring.core.comment.Comment;
 import io.spring.core.comment.CommentRepository;
+import io.spring.core.service.AuthorizationService;
 import io.spring.core.user.User;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ public class CommentsApiTest extends TestWithCurrentUser {
 
   @MockBean private CommentRepository commentRepository;
   @MockBean private CommentQueryService commentQueryService;
+  @MockBean private AuthorizationService authorizationService;
 
   private Article article;
   private CommentData commentData;
@@ -132,6 +134,7 @@ public class CommentsApiTest extends TestWithCurrentUser {
   public void should_delete_comment_success() throws Exception {
     when(commentRepository.findById(eq(article.getId()), eq(comment.getId())))
         .thenReturn(Optional.of(comment));
+    when(authorizationService.canWriteComment(eq(user), eq(article), eq(comment))).thenReturn(true);
 
     given()
         .header("Authorization", "Token " + token)
@@ -153,6 +156,8 @@ public class CommentsApiTest extends TestWithCurrentUser {
 
     when(commentRepository.findById(eq(article.getId()), eq(comment.getId())))
         .thenReturn(Optional.of(comment));
+    when(authorizationService.canWriteComment(eq(anotherUser), eq(article), eq(comment)))
+        .thenReturn(false);
     String token = jwtService.toToken(anotherUser);
     when(userRepository.findById(eq(anotherUser.getId()))).thenReturn(Optional.of(anotherUser));
     given()

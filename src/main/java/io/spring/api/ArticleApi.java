@@ -10,7 +10,7 @@ import io.spring.core.article.Article;
 import io.spring.core.article.ArticleRepository;
 import io.spring.core.service.AuthorizationService;
 import io.spring.core.user.User;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import javax.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -31,6 +31,7 @@ public class ArticleApi {
   private ArticleQueryService articleQueryService;
   private ArticleRepository articleRepository;
   private ArticleCommandService articleCommandService;
+  private AuthorizationService authorizationService;
 
   @GetMapping
   public ResponseEntity<?> article(
@@ -50,7 +51,7 @@ public class ArticleApi {
         .findBySlug(slug)
         .map(
             article -> {
-              if (!AuthorizationService.canWriteArticle(user, article)) {
+              if (!authorizationService.canWriteArticle(user, article)) {
                 throw new NoAuthorizationException();
               }
               Article updatedArticle =
@@ -69,7 +70,7 @@ public class ArticleApi {
         .findBySlug(slug)
         .map(
             article -> {
-              if (!AuthorizationService.canWriteArticle(user, article)) {
+              if (!authorizationService.canWriteArticle(user, article)) {
                 throw new NoAuthorizationException();
               }
               articleRepository.remove(article);
@@ -79,10 +80,6 @@ public class ArticleApi {
   }
 
   private Map<String, Object> articleResponse(ArticleData articleData) {
-    return new HashMap<String, Object>() {
-      {
-        put("article", articleData);
-      }
-    };
+    return Collections.singletonMap("article", articleData);
   }
 }

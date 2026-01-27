@@ -18,6 +18,7 @@ import io.spring.application.data.ArticleData;
 import io.spring.application.data.ProfileData;
 import io.spring.core.article.Article;
 import io.spring.core.article.ArticleRepository;
+import io.spring.core.service.AuthorizationService;
 import io.spring.core.user.User;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,6 +45,8 @@ public class ArticleApiTest extends TestWithCurrentUser {
   @MockBean private ArticleRepository articleRepository;
 
   @MockBean ArticleCommandService articleCommandService;
+
+  @MockBean AuthorizationService authorizationService;
 
   @Override
   @BeforeEach
@@ -102,6 +105,7 @@ public class ArticleApiTest extends TestWithCurrentUser {
 
     when(articleRepository.findBySlug(eq(originalArticle.getSlug())))
         .thenReturn(Optional.of(originalArticle));
+    when(authorizationService.canWriteArticle(eq(user), eq(originalArticle))).thenReturn(true);
     when(articleCommandService.updateArticle(eq(originalArticle), any()))
         .thenReturn(updatedArticle);
     when(articleQueryService.findBySlug(eq(updatedArticle.getSlug()), eq(user)))
@@ -152,6 +156,7 @@ public class ArticleApiTest extends TestWithCurrentUser {
                 false));
 
     when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
+    when(authorizationService.canWriteArticle(eq(user), eq(article))).thenReturn(false);
     when(articleQueryService.findBySlug(eq(article.getSlug()), eq(user)))
         .thenReturn(Optional.of(articleData));
 
@@ -166,7 +171,7 @@ public class ArticleApiTest extends TestWithCurrentUser {
   }
 
   @Test
-  public void should_delete_article_success() throws Exception {
+  public void should_delete_article_success()throws Exception {
     String title = "title";
     String body = "body";
     String description = "description";
@@ -174,6 +179,7 @@ public class ArticleApiTest extends TestWithCurrentUser {
     Article article =
         new Article(title, description, body, Arrays.asList("java", "spring", "jpg"), user.getId());
     when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
+    when(authorizationService.canWriteArticle(eq(user), eq(article))).thenReturn(true);
 
     given()
         .header("Authorization", "Token " + token)
@@ -198,6 +204,7 @@ public class ArticleApiTest extends TestWithCurrentUser {
             title, description, body, Arrays.asList("java", "spring", "jpg"), anotherUser.getId());
 
     when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
+    when(authorizationService.canWriteArticle(eq(user), eq(article))).thenReturn(false);
     given()
         .header("Authorization", "Token " + token)
         .when()

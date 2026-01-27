@@ -27,6 +27,7 @@ public class CommentMutation {
   private ArticleRepository articleRepository;
   private CommentRepository commentRepository;
   private CommentQueryService commentQueryService;
+  private AuthorizationService authorizationService;
 
   @DgsData(parentType = MUTATION.TYPE_NAME, field = MUTATION.AddComment)
   public DataFetcherResult<CommentPayload> createComment(
@@ -57,7 +58,7 @@ public class CommentMutation {
         .findById(article.getId(), commentId)
         .map(
             comment -> {
-              if (!AuthorizationService.canWriteComment(user, article, comment)) {
+              if (!authorizationService.canWriteComment(user, article, comment)) {
                 throw new NoAuthorizationException();
               }
               commentRepository.remove(comment);
