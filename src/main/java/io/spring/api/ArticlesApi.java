@@ -1,12 +1,10 @@
 package io.spring.api;
 
-import io.spring.application.ArticleQueryService;
-import io.spring.application.Page;
-import io.spring.application.article.ArticleCommandService;
+import io.spring.api.adapter.RestToGraphQLAdapter;
 import io.spring.application.article.NewArticleParam;
-import io.spring.core.article.Article;
+import io.spring.application.data.ArticleDataList;
 import io.spring.core.user.User;
-import java.util.HashMap;
+import java.util.Map;
 import javax.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,39 +20,40 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/articles")
 @AllArgsConstructor
 public class ArticlesApi {
-  private ArticleCommandService articleCommandService;
-  private ArticleQueryService articleQueryService;
+  private RestToGraphQLAdapter restToGraphQLAdapter;
 
   @PostMapping
-  public ResponseEntity createArticle(
+  public ResponseEntity<Map<String, Object>> createArticle(
       @Valid @RequestBody NewArticleParam newArticleParam, @AuthenticationPrincipal User user) {
-    Article article = articleCommandService.createArticle(newArticleParam, user);
-    return ResponseEntity.ok(
-        new HashMap<String, Object>() {
-          {
-            put("article", articleQueryService.findById(article.getId(), user).get());
-          }
-        });
+    Map<String, Object> response =
+        restToGraphQLAdapter.createArticle(
+            newArticleParam.getTitle(),
+            newArticleParam.getDescription(),
+            newArticleParam.getBody(),
+            newArticleParam.getTagList(),
+            user);
+    return ResponseEntity.ok(response);
   }
 
   @GetMapping(path = "feed")
-  public ResponseEntity getFeed(
+  public ResponseEntity<ArticleDataList> getFeed(
       @RequestParam(value = "offset", defaultValue = "0") int offset,
       @RequestParam(value = "limit", defaultValue = "20") int limit,
       @AuthenticationPrincipal User user) {
-    return ResponseEntity.ok(articleQueryService.findUserFeed(user, new Page(offset, limit)));
+    ArticleDataList response = restToGraphQLAdapter.getFeed(user, offset, limit);
+    return ResponseEntity.ok(response);
   }
 
   @GetMapping
-  public ResponseEntity getArticles(
+  public ResponseEntity<ArticleDataList> getArticles(
       @RequestParam(value = "offset", defaultValue = "0") int offset,
       @RequestParam(value = "limit", defaultValue = "20") int limit,
       @RequestParam(value = "tag", required = false) String tag,
       @RequestParam(value = "favorited", required = false) String favoritedBy,
       @RequestParam(value = "author", required = false) String author,
       @AuthenticationPrincipal User user) {
-    return ResponseEntity.ok(
-        articleQueryService.findRecentArticles(
-            tag, author, favoritedBy, new Page(offset, limit), user));
+    ArticleDataList response =
+        restToGraphQLAdapter.getArticles(tag, author, favoritedBy, offset, limit, user);
+    return ResponseEntity.ok(response);
   }
 }

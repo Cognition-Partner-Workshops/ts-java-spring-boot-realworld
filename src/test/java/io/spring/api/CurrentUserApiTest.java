@@ -8,9 +8,9 @@ import static org.mockito.Mockito.when;
 
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import io.spring.JacksonCustomizations;
+import io.spring.api.adapter.RestToGraphQLAdapter;
 import io.spring.api.security.WebSecurityConfig;
-import io.spring.application.UserQueryService;
-import io.spring.application.user.UserService;
+import io.spring.application.data.UserWithToken;
 import io.spring.core.user.User;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,22 +22,15 @@ import org.springframework.boot.autoconfigure.validation.ValidationAutoConfigura
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(CurrentUserApi.class)
-@Import({
-  WebSecurityConfig.class,
-  JacksonCustomizations.class,
-  UserService.class,
-  ValidationAutoConfiguration.class,
-  BCryptPasswordEncoder.class
-})
+@Import({WebSecurityConfig.class, JacksonCustomizations.class, ValidationAutoConfiguration.class})
 public class CurrentUserApiTest extends TestWithCurrentUser {
 
   @Autowired private MockMvc mvc;
 
-  @MockBean private UserQueryService userQueryService;
+  @MockBean private RestToGraphQLAdapter restToGraphQLAdapter;
 
   @Override
   @BeforeEach
@@ -48,7 +41,14 @@ public class CurrentUserApiTest extends TestWithCurrentUser {
 
   @Test
   public void should_get_current_user_with_token() throws Exception {
-    when(userQueryService.findById(any())).thenReturn(Optional.of(userData));
+    Map<String, Object> userResponse =
+        new HashMap<String, Object>() {
+          {
+            put("user", new UserWithToken(userData, token));
+          }
+        };
+
+    when(restToGraphQLAdapter.getCurrentUser(any(), eq(token))).thenReturn(userResponse);
 
     given()
         .header("Authorization", "Token " + token)
@@ -106,7 +106,14 @@ public class CurrentUserApiTest extends TestWithCurrentUser {
     when(userRepository.findByUsername(eq(newUsername))).thenReturn(Optional.empty());
     when(userRepository.findByEmail(eq(newEmail))).thenReturn(Optional.empty());
 
-    when(userQueryService.findById(eq(user.getId()))).thenReturn(Optional.of(userData));
+    Map<String, Object> userResponse =
+        new HashMap<String, Object>() {
+          {
+            put("user", new UserWithToken(userData, token));
+          }
+        };
+
+    when(restToGraphQLAdapter.updateUser(any(), any(), eq(token))).thenReturn(userResponse);
 
     given()
         .contentType("application/json")
@@ -130,8 +137,6 @@ public class CurrentUserApiTest extends TestWithCurrentUser {
         .thenReturn(Optional.of(new User(newEmail, "username", "123", "", "")));
     when(userRepository.findByUsername(eq(newUsername))).thenReturn(Optional.empty());
 
-    when(userQueryService.findById(eq(user.getId()))).thenReturn(Optional.of(userData));
-
     given()
         .contentType("application/json")
         .header("Authorization", "Token " + token)
@@ -141,7 +146,7 @@ public class CurrentUserApiTest extends TestWithCurrentUser {
         .prettyPeek()
         .then()
         .statusCode(422)
-        .body("errors.email[0]", equalTo("email already exist"));
+        .body("errors.email[0]", equalTo("duplicated email"));
   }
 
   private HashMap<String, Object> prepareUpdateParam(

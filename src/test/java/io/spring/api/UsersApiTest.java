@@ -4,17 +4,15 @@ import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import io.spring.JacksonCustomizations;
+import io.spring.api.adapter.RestToGraphQLAdapter;
+import io.spring.api.exception.InvalidAuthenticationException;
 import io.spring.api.security.WebSecurityConfig;
-import io.spring.application.UserQueryService;
-import io.spring.application.data.UserData;
-import io.spring.application.user.UserService;
+import io.spring.application.data.UserWithToken;
 import io.spring.core.service.JwtService;
-import io.spring.core.user.User;
 import io.spring.core.user.UserRepository;
 import io.spring.infrastructure.mybatis.readservice.UserReadService;
 import java.util.HashMap;
@@ -26,29 +24,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(UsersApi.class)
-@Import({
-  WebSecurityConfig.class,
-  UserQueryService.class,
-  BCryptPasswordEncoder.class,
-  JacksonCustomizations.class
-})
+@Import({WebSecurityConfig.class, JacksonCustomizations.class})
 public class UsersApiTest {
   @Autowired private MockMvc mvc;
+
+  @MockBean private RestToGraphQLAdapter restToGraphQLAdapter;
 
   @MockBean private UserRepository userRepository;
 
   @MockBean private JwtService jwtService;
 
   @MockBean private UserReadService userReadService;
-
-  @MockBean private UserService userService;
-
-  @Autowired private PasswordEncoder passwordEncoder;
 
   private String defaultAvatar;
 
@@ -63,15 +52,19 @@ public class UsersApiTest {
     String email = "john@jacob.com";
     String username = "johnjacob";
 
-    when(jwtService.toToken(any())).thenReturn("123");
-    User user = new User(email, username, "123", "", defaultAvatar);
-    UserData userData = new UserData(user.getId(), email, username, "", defaultAvatar);
-    when(userReadService.findById(any())).thenReturn(userData);
+    Map<String, Object> userResponse =
+        new HashMap<String, Object>() {
+          {
+            put(
+                "user",
+                new UserWithToken(
+                    new io.spring.application.data.UserData(
+                        "123", email, username, "", defaultAvatar),
+                    "123"));
+          }
+        };
 
-    when(userService.createUser(any())).thenReturn(user);
-
-    when(userRepository.findByUsername(eq(username))).thenReturn(Optional.empty());
-    when(userRepository.findByEmail(eq(email))).thenReturn(Optional.empty());
+    when(restToGraphQLAdapter.createUser(any())).thenReturn(userResponse);
 
     Map<String, Object> param = prepareRegisterParameter(email, username);
 
@@ -87,8 +80,6 @@ public class UsersApiTest {
         .body("user.bio", equalTo(""))
         .body("user.image", equalTo(defaultAvatar))
         .body("user.token", equalTo("123"));
-
-    verify(userService).createUser(any());
   }
 
   @Test
@@ -134,7 +125,9 @@ public class UsersApiTest {
     String username = "johnjacob";
 
     when(userRepository.findByUsername(eq(username)))
-        .thenReturn(Optional.of(new User(email, username, "123", "bio", "")));
+        .thenReturn(
+            Optional.of(
+                new io.spring.core.user.User(email, username, "123", "bio", "")));
     when(userRepository.findByEmail(any())).thenReturn(Optional.empty());
 
     Map<String, Object> param = prepareRegisterParameter(email, username);
@@ -156,7 +149,9 @@ public class UsersApiTest {
     String username = "johnjacob2";
 
     when(userRepository.findByEmail(eq(email)))
-        .thenReturn(Optional.of(new User(email, username, "123", "bio", "")));
+        .thenReturn(
+            Optional.of(
+                new io.spring.core.user.User(email, username, "123", "bio", "")));
 
     when(userRepository.findByUsername(eq(username))).thenReturn(Optional.empty());
 
@@ -195,13 +190,19 @@ public class UsersApiTest {
     String username = "johnjacob2";
     String password = "123";
 
-    User user = new User(email, username, passwordEncoder.encode(password), "", defaultAvatar);
-    UserData userData = new UserData("123", email, username, "", defaultAvatar);
+    Map<String, Object> userResponse =
+        new HashMap<String, Object>() {
+          {
+            put(
+                "user",
+                new UserWithToken(
+                    new io.spring.application.data.UserData(
+                        "123", email, username, "", defaultAvatar),
+                    "123"));
+          }
+        };
 
-    when(userRepository.findByEmail(eq(email))).thenReturn(Optional.of(user));
-    when(userReadService.findByUsername(eq(username))).thenReturn(userData);
-    when(userReadService.findById(eq(user.getId()))).thenReturn(userData);
-    when(jwtService.toToken(any())).thenReturn("123");
+    when(restToGraphQLAdapter.login(eq(email), eq(password))).thenReturn(userResponse);
 
     Map<String, Object> param =
         new HashMap<String, Object>() {
@@ -229,20 +230,15 @@ public class UsersApiTest {
         .body("user.bio", equalTo(""))
         .body("user.image", equalTo(defaultAvatar))
         .body("user.token", equalTo("123"));
-    ;
   }
 
   @Test
   public void should_fail_login_with_wrong_password() throws Exception {
     String email = "john@jacob.com";
-    String username = "johnjacob2";
-    String password = "123";
+    String password = "123123";
 
-    User user = new User(email, username, password, "", defaultAvatar);
-    UserData userData = new UserData(user.getId(), email, username, "", defaultAvatar);
-
-    when(userRepository.findByEmail(eq(email))).thenReturn(Optional.of(user));
-    when(userReadService.findByUsername(eq(username))).thenReturn(userData);
+    when(restToGraphQLAdapter.login(eq(email), eq(password)))
+        .thenThrow(new InvalidAuthenticationException());
 
     Map<String, Object> param =
         new HashMap<String, Object>() {
@@ -252,7 +248,7 @@ public class UsersApiTest {
                 new HashMap<String, Object>() {
                   {
                     put("email", email);
-                    put("password", "123123");
+                    put("password", password);
                   }
                 });
           }

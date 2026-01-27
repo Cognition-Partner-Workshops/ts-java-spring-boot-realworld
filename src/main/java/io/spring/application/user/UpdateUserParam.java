@@ -16,6 +16,7 @@ public class UpdateUserParam {
 
   @Builder.Default
   @Email(message = "should be an email")
+  @DuplicatedEmailConstraint
   private String email = "";
 
   @Builder.Default private String password = "";

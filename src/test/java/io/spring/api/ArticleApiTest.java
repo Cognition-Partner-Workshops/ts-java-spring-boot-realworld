@@ -3,27 +3,24 @@ package io.spring.api;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import io.spring.JacksonCustomizations;
 import io.spring.TestHelper;
+import io.spring.api.adapter.RestToGraphQLAdapter;
+import io.spring.api.exception.NoAuthorizationException;
+import io.spring.api.exception.ResourceNotFoundException;
 import io.spring.api.security.WebSecurityConfig;
-import io.spring.application.ArticleQueryService;
-import io.spring.application.article.ArticleCommandService;
 import io.spring.application.data.ArticleData;
-import io.spring.application.data.ProfileData;
 import io.spring.core.article.Article;
-import io.spring.core.article.ArticleRepository;
 import io.spring.core.user.User;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,11 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
 public class ArticleApiTest extends TestWithCurrentUser {
   @Autowired private MockMvc mvc;
 
-  @MockBean private ArticleQueryService articleQueryService;
-
-  @MockBean private ArticleRepository articleRepository;
-
-  @MockBean ArticleCommandService articleCommandService;
+  @MockBean private RestToGraphQLAdapter restToGraphQLAdapter;
 
   @Override
   @BeforeEach
@@ -66,7 +59,14 @@ public class ArticleApiTest extends TestWithCurrentUser {
             time);
     ArticleData articleData = TestHelper.getArticleDataFromArticleAndUser(article, user);
 
-    when(articleQueryService.findBySlug(eq(slug), eq(null))).thenReturn(Optional.of(articleData));
+    Map<String, Object> articleResponse =
+        new HashMap<String, Object>() {
+          {
+            put("article", articleData);
+          }
+        };
+
+    when(restToGraphQLAdapter.getArticle(eq(slug), eq(null))).thenReturn(articleResponse);
 
     RestAssuredMockMvc.when()
         .get("/articles/{slug}", slug)
@@ -79,19 +79,20 @@ public class ArticleApiTest extends TestWithCurrentUser {
 
   @Test
   public void should_404_if_article_not_found() throws Exception {
-    when(articleQueryService.findBySlug(anyString(), any())).thenReturn(Optional.empty());
+    when(restToGraphQLAdapter.getArticle(any(), any()))
+        .thenThrow(new ResourceNotFoundException());
     RestAssuredMockMvc.when().get("/articles/not-exists").then().statusCode(404);
   }
 
   @Test
   public void should_update_article_content_success() throws Exception {
-    List<String> tagList = Arrays.asList("java", "spring", "jpg");
-
-    Article originalArticle =
-        new Article("old title", "old description", "old body", tagList, user.getId());
-
     Article updatedArticle =
-        new Article("new title", "new description", "new body", tagList, user.getId());
+        new Article(
+            "new title",
+            "new description",
+            "new body",
+            Arrays.asList("java", "spring", "jpg"),
+            user.getId());
 
     Map<String, Object> updateParam =
         prepareUpdateParam(
@@ -100,19 +101,22 @@ public class ArticleApiTest extends TestWithCurrentUser {
     ArticleData updatedArticleData =
         TestHelper.getArticleDataFromArticleAndUser(updatedArticle, user);
 
-    when(articleRepository.findBySlug(eq(originalArticle.getSlug())))
-        .thenReturn(Optional.of(originalArticle));
-    when(articleCommandService.updateArticle(eq(originalArticle), any()))
-        .thenReturn(updatedArticle);
-    when(articleQueryService.findBySlug(eq(updatedArticle.getSlug()), eq(user)))
-        .thenReturn(Optional.of(updatedArticleData));
+    Map<String, Object> articleResponse =
+        new HashMap<String, Object>() {
+          {
+            put("article", updatedArticleData);
+          }
+        };
+
+    when(restToGraphQLAdapter.updateArticle(any(), any(), any(), any(), any()))
+        .thenReturn(articleResponse);
 
     given()
         .contentType("application/json")
         .header("Authorization", "Token " + token)
         .body(updateParam)
         .when()
-        .put("/articles/{slug}", originalArticle.getSlug())
+        .put("/articles/{slug}", "old-title")
         .then()
         .statusCode(200)
         .body("article.slug", equalTo(updatedArticleData.getSlug()));
@@ -125,83 +129,39 @@ public class ArticleApiTest extends TestWithCurrentUser {
     String description = "new description";
     Map<String, Object> updateParam = prepareUpdateParam(title, body, description);
 
-    User anotherUser = new User("test@test.com", "test", "123123", "", "");
-
-    Article article =
-        new Article(
-            title, description, body, Arrays.asList("java", "spring", "jpg"), anotherUser.getId());
-
-    DateTime time = new DateTime();
-    ArticleData articleData =
-        new ArticleData(
-            article.getId(),
-            article.getSlug(),
-            article.getTitle(),
-            article.getDescription(),
-            article.getBody(),
-            false,
-            0,
-            time,
-            time,
-            Arrays.asList("joda"),
-            new ProfileData(
-                anotherUser.getId(),
-                anotherUser.getUsername(),
-                anotherUser.getBio(),
-                anotherUser.getImage(),
-                false));
-
-    when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
-    when(articleQueryService.findBySlug(eq(article.getSlug()), eq(user)))
-        .thenReturn(Optional.of(articleData));
+    when(restToGraphQLAdapter.updateArticle(any(), any(), any(), any(), any()))
+        .thenThrow(new NoAuthorizationException());
 
     given()
         .contentType("application/json")
         .header("Authorization", "Token " + token)
         .body(updateParam)
         .when()
-        .put("/articles/{slug}", article.getSlug())
+        .put("/articles/{slug}", "some-article")
         .then()
         .statusCode(403);
   }
 
   @Test
   public void should_delete_article_success() throws Exception {
-    String title = "title";
-    String body = "body";
-    String description = "description";
-
-    Article article =
-        new Article(title, description, body, Arrays.asList("java", "spring", "jpg"), user.getId());
-    when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
+    doNothing().when(restToGraphQLAdapter).deleteArticle(any());
 
     given()
         .header("Authorization", "Token " + token)
         .when()
-        .delete("/articles/{slug}", article.getSlug())
+        .delete("/articles/{slug}", "some-article")
         .then()
         .statusCode(204);
-
-    verify(articleRepository).remove(eq(article));
   }
 
   @Test
   public void should_403_if_not_author_delete_article() throws Exception {
-    String title = "new-title";
-    String body = "new body";
-    String description = "new description";
+    doThrow(new NoAuthorizationException()).when(restToGraphQLAdapter).deleteArticle(any());
 
-    User anotherUser = new User("test@test.com", "test", "123123", "", "");
-
-    Article article =
-        new Article(
-            title, description, body, Arrays.asList("java", "spring", "jpg"), anotherUser.getId());
-
-    when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
     given()
         .header("Authorization", "Token " + token)
         .when()
-        .delete("/articles/{slug}", article.getSlug())
+        .delete("/articles/{slug}", "some-article")
         .then()
         .statusCode(403);
   }

@@ -1,14 +1,8 @@
 package io.spring.api;
 
-import io.spring.api.exception.ResourceNotFoundException;
-import io.spring.application.ArticleQueryService;
-import io.spring.application.data.ArticleData;
-import io.spring.core.article.Article;
-import io.spring.core.article.ArticleRepository;
-import io.spring.core.favorite.ArticleFavorite;
-import io.spring.core.favorite.ArticleFavoriteRepository;
+import io.spring.api.adapter.RestToGraphQLAdapter;
 import io.spring.core.user.User;
-import java.util.HashMap;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,41 +16,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "articles/{slug}/favorite")
 @AllArgsConstructor
 public class ArticleFavoriteApi {
-  private ArticleFavoriteRepository articleFavoriteRepository;
-  private ArticleRepository articleRepository;
-  private ArticleQueryService articleQueryService;
+  private RestToGraphQLAdapter restToGraphQLAdapter;
 
   @PostMapping
-  public ResponseEntity favoriteArticle(
+  public ResponseEntity<Map<String, Object>> favoriteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
-    Article article =
-        articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
-    ArticleFavorite articleFavorite = new ArticleFavorite(article.getId(), user.getId());
-    articleFavoriteRepository.save(articleFavorite);
-    return responseArticleData(articleQueryService.findBySlug(slug, user).get());
+    Map<String, Object> response = restToGraphQLAdapter.favoriteArticle(slug, user);
+    return ResponseEntity.ok(response);
   }
 
   @DeleteMapping
-  public ResponseEntity unfavoriteArticle(
+  public ResponseEntity<Map<String, Object>> unfavoriteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
-    Article article =
-        articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
-    articleFavoriteRepository
-        .find(article.getId(), user.getId())
-        .ifPresent(
-            favorite -> {
-              articleFavoriteRepository.remove(favorite);
-            });
-    return responseArticleData(articleQueryService.findBySlug(slug, user).get());
-  }
-
-  private ResponseEntity<HashMap<String, Object>> responseArticleData(
-      final ArticleData articleData) {
-    return ResponseEntity.ok(
-        new HashMap<String, Object>() {
-          {
-            put("article", articleData);
-          }
-        });
+    Map<String, Object> response = restToGraphQLAdapter.unfavoriteArticle(slug, user);
+    return ResponseEntity.ok(response);
   }
 }

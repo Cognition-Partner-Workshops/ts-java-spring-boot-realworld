@@ -1,16 +1,8 @@
 package io.spring.api;
 
-import io.spring.api.exception.NoAuthorizationException;
-import io.spring.api.exception.ResourceNotFoundException;
-import io.spring.application.ArticleQueryService;
-import io.spring.application.article.ArticleCommandService;
+import io.spring.api.adapter.RestToGraphQLAdapter;
 import io.spring.application.article.UpdateArticleParam;
-import io.spring.application.data.ArticleData;
-import io.spring.core.article.Article;
-import io.spring.core.article.ArticleRepository;
-import io.spring.core.service.AuthorizationService;
 import io.spring.core.user.User;
-import java.util.HashMap;
 import java.util.Map;
 import javax.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -28,61 +20,34 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/articles/{slug}")
 @AllArgsConstructor
 public class ArticleApi {
-  private ArticleQueryService articleQueryService;
-  private ArticleRepository articleRepository;
-  private ArticleCommandService articleCommandService;
+  private RestToGraphQLAdapter restToGraphQLAdapter;
 
   @GetMapping
-  public ResponseEntity<?> article(
+  public ResponseEntity<Map<String, Object>> article(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
-    return articleQueryService
-        .findBySlug(slug, user)
-        .map(articleData -> ResponseEntity.ok(articleResponse(articleData)))
-        .orElseThrow(ResourceNotFoundException::new);
+    Map<String, Object> response = restToGraphQLAdapter.getArticle(slug, user);
+    return ResponseEntity.ok(response);
   }
 
   @PutMapping
-  public ResponseEntity<?> updateArticle(
+  public ResponseEntity<Map<String, Object>> updateArticle(
       @PathVariable("slug") String slug,
       @AuthenticationPrincipal User user,
       @Valid @RequestBody UpdateArticleParam updateArticleParam) {
-    return articleRepository
-        .findBySlug(slug)
-        .map(
-            article -> {
-              if (!AuthorizationService.canWriteArticle(user, article)) {
-                throw new NoAuthorizationException();
-              }
-              Article updatedArticle =
-                  articleCommandService.updateArticle(article, updateArticleParam);
-              return ResponseEntity.ok(
-                  articleResponse(
-                      articleQueryService.findBySlug(updatedArticle.getSlug(), user).get()));
-            })
-        .orElseThrow(ResourceNotFoundException::new);
+    Map<String, Object> response =
+        restToGraphQLAdapter.updateArticle(
+            slug,
+            updateArticleParam.getTitle(),
+            updateArticleParam.getBody(),
+            updateArticleParam.getDescription(),
+            user);
+    return ResponseEntity.ok(response);
   }
 
   @DeleteMapping
-  public ResponseEntity deleteArticle(
+  public ResponseEntity<Void> deleteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
-    return articleRepository
-        .findBySlug(slug)
-        .map(
-            article -> {
-              if (!AuthorizationService.canWriteArticle(user, article)) {
-                throw new NoAuthorizationException();
-              }
-              articleRepository.remove(article);
-              return ResponseEntity.noContent().build();
-            })
-        .orElseThrow(ResourceNotFoundException::new);
-  }
-
-  private Map<String, Object> articleResponse(ArticleData articleData) {
-    return new HashMap<String, Object>() {
-      {
-        put("article", articleData);
-      }
-    };
+    restToGraphQLAdapter.deleteArticle(slug);
+    return ResponseEntity.noContent().build();
   }
 }

@@ -1,15 +1,11 @@
 package io.spring.api;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
-import io.spring.api.exception.NoAuthorizationException;
+import io.spring.api.adapter.RestToGraphQLAdapter;
 import io.spring.api.exception.ResourceNotFoundException;
-import io.spring.application.CommentQueryService;
 import io.spring.application.data.CommentData;
 import io.spring.core.article.Article;
 import io.spring.core.article.ArticleRepository;
-import io.spring.core.comment.Comment;
-import io.spring.core.comment.CommentRepository;
-import io.spring.core.service.AuthorizationService;
 import io.spring.core.user.User;
 import java.util.HashMap;
 import java.util.List;
@@ -33,29 +29,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/articles/{slug}/comments")
 @AllArgsConstructor
 public class CommentsApi {
+  private RestToGraphQLAdapter restToGraphQLAdapter;
   private ArticleRepository articleRepository;
-  private CommentRepository commentRepository;
-  private CommentQueryService commentQueryService;
 
   @PostMapping
-  public ResponseEntity<?> createComment(
+  public ResponseEntity<Map<String, Object>> createComment(
       @PathVariable("slug") String slug,
       @AuthenticationPrincipal User user,
       @Valid @RequestBody NewCommentParam newCommentParam) {
-    Article article =
-        articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
-    Comment comment = new Comment(newCommentParam.getBody(), user.getId(), article.getId());
-    commentRepository.save(comment);
-    return ResponseEntity.status(201)
-        .body(commentResponse(commentQueryService.findById(comment.getId(), user).get()));
+    Map<String, Object> response =
+        restToGraphQLAdapter.createComment(slug, newCommentParam.getBody(), user);
+    return ResponseEntity.status(201).body(response);
   }
 
   @GetMapping
-  public ResponseEntity getComments(
+  public ResponseEntity<Map<String, Object>> getComments(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
-    List<CommentData> comments = commentQueryService.findByArticleId(article.getId(), user);
+    List<CommentData> comments = restToGraphQLAdapter.getComments(article.getId(), user);
     return ResponseEntity.ok(
         new HashMap<String, Object>() {
           {
@@ -65,31 +57,12 @@ public class CommentsApi {
   }
 
   @RequestMapping(path = "{id}", method = RequestMethod.DELETE)
-  public ResponseEntity deleteComment(
+  public ResponseEntity<Void> deleteComment(
       @PathVariable("slug") String slug,
       @PathVariable("id") String commentId,
       @AuthenticationPrincipal User user) {
-    Article article =
-        articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
-    return commentRepository
-        .findById(article.getId(), commentId)
-        .map(
-            comment -> {
-              if (!AuthorizationService.canWriteComment(user, article, comment)) {
-                throw new NoAuthorizationException();
-              }
-              commentRepository.remove(comment);
-              return ResponseEntity.noContent().build();
-            })
-        .orElseThrow(ResourceNotFoundException::new);
-  }
-
-  private Map<String, Object> commentResponse(CommentData commentData) {
-    return new HashMap<String, Object>() {
-      {
-        put("comment", commentData);
-      }
-    };
+    restToGraphQLAdapter.deleteComment(slug, commentId);
+    return ResponseEntity.noContent().build();
   }
 }
 
