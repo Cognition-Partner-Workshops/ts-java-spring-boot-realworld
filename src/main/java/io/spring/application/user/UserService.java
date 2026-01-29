@@ -74,7 +74,6 @@ class UpdateUserValidator implements ConstraintValidator<UpdateUserConstraint, U
   @Override
   public boolean isValid(UpdateUserCommand value, ConstraintValidatorContext context) {
     String inputEmail = value.getParam().getEmail();
-    System.out.println("inputEmail: " + inputEmail);
     String inputUsername = value.getParam().getUsername();
     final User targetUser = value.getTargetUser();
 
