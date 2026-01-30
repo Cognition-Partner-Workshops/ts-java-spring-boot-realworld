@@ -9,6 +9,7 @@ public class UserWithToken {
   private String bio;
   private String image;
   private String token;
+  private String welcomeText;
 
   public UserWithToken(UserData userData, String token) {
     this.email = userData.getEmail();
@@ -16,5 +17,6 @@ public class UserWithToken {
     this.bio = userData.getBio();
     this.image = userData.getImage();
     this.token = token;
+    this.welcomeText = "Welcome " + userData.getUsername();
   }
 }
