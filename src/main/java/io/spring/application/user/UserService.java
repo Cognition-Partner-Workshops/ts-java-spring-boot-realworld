@@ -32,6 +32,7 @@ public class UserService {
   }
 
   public User createUser(@Valid RegisterParam registerParam) {
+    System.out.println("UserService: Creating new user with username: " + registerParam.getUsername());
     User user =
         new User(
             registerParam.getEmail(),
@@ -40,10 +41,12 @@ public class UserService {
             "",
             defaultImage);
     userRepository.save(user);
+    System.out.println("UserService: User created successfully with ID: " + user.getId());
     return user;
   }
 
   public void updateUser(@Valid UpdateUserCommand command) {
+    System.out.println("UserService: Updating user with ID: " + command.getTargetUser().getId());
     User user = command.getTargetUser();
     UpdateUserParam updateUserParam = command.getParam();
     user.update(
@@ -53,6 +56,7 @@ public class UserService {
         updateUserParam.getBio(),
         updateUserParam.getImage());
     userRepository.save(user);
+    System.out.println("UserService: User updated successfully");
   }
 }
 
