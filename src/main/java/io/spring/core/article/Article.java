@@ -65,6 +65,8 @@ public class Article {
   }
 
   public static String toSlug(String title) {
-    return title.toLowerCase().replaceAll("[\\&|[\\uFE30-\\uFFA0]|\\’|\\”|\\s\\?\\,\\.]+", "-");
+    String baseSlug = title.toLowerCase().replaceAll("[\\&|[\\uFE30-\\uFFA0]|\\'|\\"|\\s\\?\\,\\.]+", "-");
+    // Add timestamp suffix to ensure unique slugs
+    return baseSlug + "-" + System.currentTimeMillis();
   }
 }
