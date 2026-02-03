@@ -1,19 +1,29 @@
 package io.spring.graphql;
 
+import io.spring.api.shared.AuthenticationService;
 import io.spring.core.user.User;
 import java.util.Optional;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
+/**
+ * Utility class for GraphQL authentication. This class delegates to the shared
+ * AuthenticationService to ensure consistent authentication handling across REST and GraphQL APIs.
+ *
+ * @deprecated Use {@link AuthenticationService} directly instead. This class is maintained for
+ *     backward compatibility with existing GraphQL resolvers.
+ */
+@Deprecated
 public class SecurityUtil {
+
+  private static final AuthenticationService authService = new AuthenticationService();
+
+  /**
+   * Retrieves the currently authenticated user.
+   *
+   * @return Optional containing the authenticated User, or empty if not authenticated
+   * @deprecated Use {@link AuthenticationService#getCurrentUser()} instead
+   */
+  @Deprecated
   public static Optional<User> getCurrentUser() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication instanceof AnonymousAuthenticationToken
-        || authentication.getPrincipal() == null) {
-      return Optional.empty();
-    }
-    io.spring.core.user.User currentUser = (io.spring.core.user.User) authentication.getPrincipal();
-    return Optional.of(currentUser);
+    return authService.getCurrentUser();
   }
 }

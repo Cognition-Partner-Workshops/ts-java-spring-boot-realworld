@@ -2,12 +2,10 @@ package io.spring.api.exception;
 
 import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import io.spring.api.shared.ApiResponse;
+import io.spring.api.shared.ExceptionUtils;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,6 +19,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+/**
+ * Global exception handler for REST API. Uses shared ExceptionUtils for consistent error handling
+ * across REST and GraphQL APIs.
+ */
 @RestControllerAdvice
 public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -50,13 +52,7 @@ public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(InvalidAuthenticationException.class)
   public ResponseEntity<Object> handleInvalidAuthentication(
       InvalidAuthenticationException e, WebRequest request) {
-    return ResponseEntity.status(UNPROCESSABLE_ENTITY)
-        .body(
-            new HashMap<String, Object>() {
-              {
-                put("message", e.getMessage());
-              }
-            });
+    return ResponseEntity.status(UNPROCESSABLE_ENTITY).body(ApiResponse.wrap("message", e.getMessage()));
   }
 
   @Override
@@ -84,26 +80,7 @@ public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
   @ResponseBody
   public ErrorResource handleConstraintViolation(
       ConstraintViolationException ex, WebRequest request) {
-    List<FieldErrorResource> errors = new ArrayList<>();
-    for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
-      FieldErrorResource fieldErrorResource =
-          new FieldErrorResource(
-              violation.getRootBeanClass().getName(),
-              getParam(violation.getPropertyPath().toString()),
-              violation.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName(),
-              violation.getMessage());
-      errors.add(fieldErrorResource);
-    }
-
+    List<FieldErrorResource> errors = ExceptionUtils.extractFieldErrors(ex);
     return new ErrorResource(errors);
-  }
-
-  private String getParam(String s) {
-    String[] splits = s.split("\\.");
-    if (splits.length == 1) {
-      return s;
-    } else {
-      return String.join(".", Arrays.copyOfRange(splits, 2, splits.length));
-    }
   }
 }

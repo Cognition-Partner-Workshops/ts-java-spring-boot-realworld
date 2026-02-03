@@ -4,6 +4,7 @@ import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsData;
 import com.netflix.graphql.dgs.InputArgument;
 import io.spring.api.exception.ResourceNotFoundException;
+import io.spring.api.shared.AuthenticationService;
 import io.spring.application.ProfileQueryService;
 import io.spring.application.data.ProfileData;
 import io.spring.core.user.FollowRelation;
@@ -15,16 +16,21 @@ import io.spring.graphql.types.Profile;
 import io.spring.graphql.types.ProfilePayload;
 import lombok.AllArgsConstructor;
 
+/**
+ * GraphQL mutation resolver for follow/unfollow operations. Uses the shared AuthenticationService
+ * for consistent authentication handling across REST and GraphQL APIs.
+ */
 @DgsComponent
 @AllArgsConstructor
 public class RelationMutation {
 
-  private UserRepository userRepository;
-  private ProfileQueryService profileQueryService;
+  private final UserRepository userRepository;
+  private final ProfileQueryService profileQueryService;
+  private final AuthenticationService authenticationService;
 
   @DgsData(parentType = MUTATION.TYPE_NAME, field = MUTATION.FollowUser)
   public ProfilePayload follow(@InputArgument("username") String username) {
-    User user = SecurityUtil.getCurrentUser().orElseThrow(AuthenticationException::new);
+    User user = authenticationService.getCurrentUser().orElseThrow(AuthenticationException::new);
     return userRepository
         .findByUsername(username)
         .map(
@@ -39,7 +45,7 @@ public class RelationMutation {
 
   @DgsData(parentType = MUTATION.TYPE_NAME, field = MUTATION.UnfollowUser)
   public ProfilePayload unfollow(@InputArgument("username") String username) {
-    User user = SecurityUtil.getCurrentUser().orElseThrow(AuthenticationException::new);
+    User user = authenticationService.getCurrentUser().orElseThrow(AuthenticationException::new);
     User target =
         userRepository.findByUsername(username).orElseThrow(ResourceNotFoundException::new);
     return userRepository
@@ -53,7 +59,7 @@ public class RelationMutation {
         .orElseThrow(ResourceNotFoundException::new);
   }
 
-  private Profile buildProfile(@InputArgument("username") String username, User current) {
+  private Profile buildProfile(String username, User current) {
     ProfileData profileData = profileQueryService.findByUsername(username, current).get();
     return Profile.newBuilder()
         .username(profileData.getUsername())

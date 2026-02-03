@@ -6,6 +6,7 @@ import com.netflix.graphql.dgs.InputArgument;
 import graphql.execution.DataFetcherResult;
 import io.spring.api.exception.NoAuthorizationException;
 import io.spring.api.exception.ResourceNotFoundException;
+import io.spring.api.shared.AuthenticationService;
 import io.spring.application.CommentQueryService;
 import io.spring.application.data.CommentData;
 import io.spring.core.article.Article;
@@ -20,18 +21,23 @@ import io.spring.graphql.types.CommentPayload;
 import io.spring.graphql.types.DeletionStatus;
 import lombok.AllArgsConstructor;
 
+/**
+ * GraphQL mutation resolver for comment operations. Uses the shared AuthenticationService for
+ * consistent authentication handling across REST and GraphQL APIs.
+ */
 @DgsComponent
 @AllArgsConstructor
 public class CommentMutation {
 
-  private ArticleRepository articleRepository;
-  private CommentRepository commentRepository;
-  private CommentQueryService commentQueryService;
+  private final ArticleRepository articleRepository;
+  private final CommentRepository commentRepository;
+  private final CommentQueryService commentQueryService;
+  private final AuthenticationService authenticationService;
 
   @DgsData(parentType = MUTATION.TYPE_NAME, field = MUTATION.AddComment)
   public DataFetcherResult<CommentPayload> createComment(
       @InputArgument("slug") String slug, @InputArgument("body") String body) {
-    User user = SecurityUtil.getCurrentUser().orElseThrow(AuthenticationException::new);
+    User user = authenticationService.getCurrentUser().orElseThrow(AuthenticationException::new);
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
     Comment comment = new Comment(body, user.getId(), article.getId());
@@ -49,7 +55,7 @@ public class CommentMutation {
   @DgsData(parentType = MUTATION.TYPE_NAME, field = MUTATION.DeleteComment)
   public DeletionStatus removeComment(
       @InputArgument("slug") String slug, @InputArgument("id") String commentId) {
-    User user = SecurityUtil.getCurrentUser().orElseThrow(AuthenticationException::new);
+    User user = authenticationService.getCurrentUser().orElseThrow(AuthenticationException::new);
 
     Article article =
         articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);

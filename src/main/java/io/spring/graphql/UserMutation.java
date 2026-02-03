@@ -5,6 +5,7 @@ import com.netflix.graphql.dgs.DgsData;
 import com.netflix.graphql.dgs.InputArgument;
 import graphql.execution.DataFetcherResult;
 import io.spring.api.exception.InvalidAuthenticationException;
+import io.spring.api.shared.AuthenticationService;
 import io.spring.application.user.RegisterParam;
 import io.spring.application.user.UpdateUserCommand;
 import io.spring.application.user.UpdateUserParam;
@@ -17,21 +18,22 @@ import io.spring.graphql.types.CreateUserInput;
 import io.spring.graphql.types.UpdateUserInput;
 import io.spring.graphql.types.UserPayload;
 import io.spring.graphql.types.UserResult;
-import java.util.Optional;
 import javax.validation.ConstraintViolationException;
 import lombok.AllArgsConstructor;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+/**
+ * GraphQL mutation resolver for user operations. Uses the shared AuthenticationService for
+ * consistent authentication handling across REST and GraphQL APIs.
+ */
 @DgsComponent
 @AllArgsConstructor
 public class UserMutation {
 
-  private UserRepository userRepository;
-  private PasswordEncoder encryptService;
-  private UserService userService;
+  private final UserRepository userRepository;
+  private final PasswordEncoder encryptService;
+  private final UserService userService;
+  private final AuthenticationService authenticationService;
 
   @DgsData(parentType = MUTATION.TYPE_NAME, field = MUTATION.CreateUser)
   public DataFetcherResult<UserResult> createUser(@InputArgument("input") CreateUserInput input) {
@@ -55,26 +57,26 @@ public class UserMutation {
   @DgsData(parentType = MUTATION.TYPE_NAME, field = MUTATION.Login)
   public DataFetcherResult<UserPayload> login(
       @InputArgument("password") String password, @InputArgument("email") String email) {
-    Optional<User> optional = userRepository.findByEmail(email);
-    if (optional.isPresent() && encryptService.matches(password, optional.get().getPassword())) {
-      return DataFetcherResult.<UserPayload>newResult()
-          .data(UserPayload.newBuilder().build())
-          .localContext(optional.get())
-          .build();
-    } else {
-      throw new InvalidAuthenticationException();
-    }
+    return userRepository
+        .findByEmail(email)
+        .filter(user -> encryptService.matches(password, user.getPassword()))
+        .map(
+            user ->
+                DataFetcherResult.<UserPayload>newResult()
+                    .data(UserPayload.newBuilder().build())
+                    .localContext(user)
+                    .build())
+        .orElseThrow(InvalidAuthenticationException::new);
   }
 
   @DgsData(parentType = MUTATION.TYPE_NAME, field = MUTATION.UpdateUser)
   public DataFetcherResult<UserPayload> updateUser(
       @InputArgument("changes") UpdateUserInput updateUserInput) {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication instanceof AnonymousAuthenticationToken
-        || authentication.getPrincipal() == null) {
+    User currentUser = authenticationService.getCurrentUser().orElse(null);
+    if (currentUser == null) {
       return null;
     }
-    io.spring.core.user.User currentUser = (io.spring.core.user.User) authentication.getPrincipal();
+
     UpdateUserParam param =
         UpdateUserParam.builder()
             .username(updateUserInput.getUsername())
