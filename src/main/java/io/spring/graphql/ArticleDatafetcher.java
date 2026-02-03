@@ -299,13 +299,22 @@ public class ArticleDatafetcher {
 
   @DgsData(parentType = ARTICLEPAYLOAD.TYPE_NAME, field = ARTICLEPAYLOAD.Article)
   public DataFetcherResult<Article> getArticle(DataFetchingEnvironment dfe) {
-    io.spring.core.article.Article article = dfe.getLocalContext();
+    Object localContext = dfe.getLocalContext();
+    ArticleData articleData;
 
-    User current = SecurityUtil.getCurrentUser().orElse(null);
-    ArticleData articleData =
-        articleQueryService
-            .findById(article.getId(), current)
-            .orElseThrow(ResourceNotFoundException::new);
+    if (localContext instanceof ArticleData) {
+      articleData = (ArticleData) localContext;
+    } else if (localContext instanceof io.spring.core.article.Article) {
+      io.spring.core.article.Article article = (io.spring.core.article.Article) localContext;
+      User current = SecurityUtil.getCurrentUser().orElse(null);
+      articleData =
+          articleQueryService
+              .findById(article.getId(), current)
+              .orElseThrow(ResourceNotFoundException::new);
+    } else {
+      throw new ResourceNotFoundException();
+    }
+
     Article articleResult = buildArticleResult(articleData);
     return DataFetcherResult.<Article>newResult()
         .localContext(
