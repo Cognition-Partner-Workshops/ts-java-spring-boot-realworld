@@ -8,8 +8,8 @@ plugins {
 }
 
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
-targetCompatibility = '11'
+sourceCompatibility = '25'
+targetCompatibility = '25'
 
 spotless {
     java {
