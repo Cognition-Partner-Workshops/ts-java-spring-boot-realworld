@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,9 +26,15 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
 
+  private static final Logger log = LoggerFactory.getLogger(CustomizeExceptionHandler.class);
+
   @ExceptionHandler({InvalidRequestException.class})
   public ResponseEntity<Object> handleInvalidRequest(RuntimeException e, WebRequest request) {
     InvalidRequestException ire = (InvalidRequestException) e;
+    log.warn(
+        "Invalid request: {} - errors: {}",
+        request.getDescription(false),
+        ire.getErrors().getAllErrors());
 
     List<FieldErrorResource> errorResources =
         ire.getErrors().getFieldErrors().stream()
@@ -50,6 +58,7 @@ public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(InvalidAuthenticationException.class)
   public ResponseEntity<Object> handleInvalidAuthentication(
       InvalidAuthenticationException e, WebRequest request) {
+    log.warn("Authentication failed: {} - message: {}", request.getDescription(false), e.getMessage());
     return ResponseEntity.status(UNPROCESSABLE_ENTITY)
         .body(
             new HashMap<String, Object>() {
@@ -65,6 +74,10 @@ public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
       HttpHeaders headers,
       HttpStatus status,
       WebRequest request) {
+    log.warn(
+        "Method argument validation failed: {} - errors: {}",
+        request.getDescription(false),
+        e.getBindingResult().getAllErrors());
     List<FieldErrorResource> errorResources =
         e.getBindingResult().getFieldErrors().stream()
             .map(
@@ -84,6 +97,10 @@ public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
   @ResponseBody
   public ErrorResource handleConstraintViolation(
       ConstraintViolationException ex, WebRequest request) {
+    log.warn(
+        "Constraint violation: {} - violations: {}",
+        request.getDescription(false),
+        ex.getConstraintViolations());
     List<FieldErrorResource> errors = new ArrayList<>();
     for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
       FieldErrorResource fieldErrorResource =
@@ -96,6 +113,44 @@ public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     return new ErrorResource(errors);
+  }
+
+  @ExceptionHandler(ResourceNotFoundException.class)
+  public ResponseEntity<Object> handleResourceNotFound(
+      ResourceNotFoundException e, WebRequest request) {
+    log.warn("Resource not found: {}", request.getDescription(false));
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(
+            new HashMap<String, Object>() {
+              {
+                put("message", "Resource not found");
+              }
+            });
+  }
+
+  @ExceptionHandler(NoAuthorizationException.class)
+  public ResponseEntity<Object> handleNoAuthorization(
+      NoAuthorizationException e, WebRequest request) {
+    log.warn("Authorization denied: {}", request.getDescription(false));
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .body(
+            new HashMap<String, Object>() {
+              {
+                put("message", "No authorization");
+              }
+            });
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<Object> handleGenericException(Exception e, WebRequest request) {
+    log.error("Unexpected error: {} - exception: {}", request.getDescription(false), e.getMessage(), e);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(
+            new HashMap<String, Object>() {
+              {
+                put("message", "An unexpected error occurred");
+              }
+            });
   }
 
   private String getParam(String s) {

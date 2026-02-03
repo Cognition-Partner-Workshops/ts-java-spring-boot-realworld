@@ -8,6 +8,8 @@ import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +19,9 @@ import org.springframework.validation.annotation.Validated;
 @Service
 @Validated
 public class UserService {
+
+  private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
   private UserRepository userRepository;
   private String defaultImage;
   private PasswordEncoder passwordEncoder;
@@ -32,6 +37,7 @@ public class UserService {
   }
 
   public User createUser(@Valid RegisterParam registerParam) {
+    log.info("Creating new user: email={} username={}", registerParam.getEmail(), registerParam.getUsername());
     User user =
         new User(
             registerParam.getEmail(),
@@ -40,12 +46,14 @@ public class UserService {
             "",
             defaultImage);
     userRepository.save(user);
+    log.info("User created successfully: userId={} username={}", user.getId(), user.getUsername());
     return user;
   }
 
   public void updateUser(@Valid UpdateUserCommand command) {
     User user = command.getTargetUser();
     UpdateUserParam updateUserParam = command.getParam();
+    log.info("Updating user: userId={} username={}", user.getId(), user.getUsername());
     user.update(
         updateUserParam.getEmail(),
         updateUserParam.getUsername(),
@@ -53,6 +61,7 @@ public class UserService {
         updateUserParam.getBio(),
         updateUserParam.getImage());
     userRepository.save(user);
+    log.info("User updated successfully: userId={}", user.getId());
   }
 }
 

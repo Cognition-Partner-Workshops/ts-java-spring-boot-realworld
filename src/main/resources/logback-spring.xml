@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-}] %-5level %logger{36} - %msg%n"/>
+    <property name="JSON_LOG_PATTERN" value='{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%level","correlationId":"%X{correlationId:-}","thread":"%thread","logger":"%logger{36}","message":"%msg"}%n'/>
+
+    <springProfile name="default,dev,test">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <logger name="io.spring" level="DEBUG"/>
+        <logger name="io.spring.api" level="DEBUG"/>
+        <logger name="io.spring.application" level="DEBUG"/>
+        <logger name="io.spring.infrastructure" level="DEBUG"/>
+        <logger name="org.springframework.web" level="INFO"/>
+        <logger name="org.springframework.security" level="INFO"/>
+    </springProfile>
+
+    <springProfile name="prod,production">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${JSON_LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+
+        <logger name="io.spring" level="INFO"/>
+        <logger name="io.spring.api" level="INFO"/>
+        <logger name="io.spring.application" level="INFO"/>
+        <logger name="org.springframework.web" level="WARN"/>
+        <logger name="org.springframework.security" level="WARN"/>
+    </springProfile>
+
+    <springProfile name="debug">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <root level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <logger name="io.spring" level="TRACE"/>
+        <logger name="org.springframework.web" level="DEBUG"/>
+        <logger name="org.springframework.security" level="DEBUG"/>
+        <logger name="org.mybatis" level="DEBUG"/>
+    </springProfile>
+</configuration>
