@@ -73,4 +73,37 @@ public class CommentTest {
     
     assertThat(comment, is(notNullValue()));
   }
+
+  @Test
+  public void should_have_consistent_hashcode() {
+    Comment comment = new Comment("Comment", "user-1", "article-1");
+    int hashCode1 = comment.hashCode();
+    int hashCode2 = comment.hashCode();
+    
+    assertThat(hashCode1, is(hashCode2));
+  }
+
+  @Test
+  public void should_handle_null_id_in_equals() {
+    Comment comment1 = new Comment();
+    Comment comment2 = new Comment();
+    
+    assertThat(comment1.equals(comment2), is(true));
+  }
+
+  @Test
+  public void should_not_equal_when_one_id_null() {
+    Comment comment1 = new Comment("Comment", "user-1", "article-1");
+    Comment comment2 = new Comment();
+    
+    assertThat(comment1.equals(comment2), is(false));
+  }
+
+  @Test
+  public void should_not_equal_when_other_id_null() {
+    Comment comment1 = new Comment();
+    Comment comment2 = new Comment("Comment", "user-1", "article-1");
+    
+    assertThat(comment1.equals(comment2), is(false));
+  }
 }

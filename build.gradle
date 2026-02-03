@@ -37,22 +37,7 @@ jacocoTestReport {
             fileTree(dir: it, exclude: [
                 'io/spring/graphql/types/**',
                 'io/spring/graphql/DgsConstants**',
-                'io/spring/graphql/*Datafetcher*',
-                'io/spring/graphql/*Mutation*',
-                'io/spring/graphql/SecurityUtil*',
-                'io/spring/application/data/**',
-                'io/spring/graphql/exception/**',
-                'io/spring/infrastructure/mybatis/**',
-                'io/spring/Application*',
-                'io/spring/application/*QueryService*',
-                'io/spring/application/article/*',
-                'io/spring/application/user/**',
-                'io/spring/core/user/UserRepository*',
-                'io/spring/core/article/ArticleRepository*',
-                'io/spring/core/comment/CommentRepository*',
-                'io/spring/core/favorite/ArticleFavoriteRepository*',
-                'io/spring/infrastructure/repository/**',
-                'io/spring/core/service/**'
+                'io/spring/RealWorldApplication**'
             ])
         }))
     }
@@ -65,29 +50,14 @@ jacocoTestCoverageVerification {
             fileTree(dir: it, exclude: [
                 'io/spring/graphql/types/**',
                 'io/spring/graphql/DgsConstants**',
-                'io/spring/graphql/*Datafetcher*',
-                'io/spring/graphql/*Mutation*',
-                'io/spring/graphql/SecurityUtil*',
-                'io/spring/application/data/**',
-                'io/spring/graphql/exception/**',
-                'io/spring/infrastructure/mybatis/**',
-                'io/spring/Application*',
-                'io/spring/application/*QueryService*',
-                'io/spring/application/article/*',
-                'io/spring/application/user/**',
-                'io/spring/core/user/UserRepository*',
-                'io/spring/core/article/ArticleRepository*',
-                'io/spring/core/comment/CommentRepository*',
-                'io/spring/core/favorite/ArticleFavoriteRepository*',
-                'io/spring/infrastructure/repository/**',
-                'io/spring/core/service/**'
+                'io/spring/RealWorldApplication**'
             ])
         }))
     }
     violationRules {
         rule {
             limit {
-                minimum = 0.84
+                minimum = 0.95
             }
         }
     }

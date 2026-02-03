@@ -11,6 +11,7 @@ import io.spring.application.data.ProfileData;
 import io.spring.core.user.User;
 import io.spring.infrastructure.mybatis.readservice.CommentReadService;
 import io.spring.infrastructure.mybatis.readservice.UserRelationshipQueryService;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -111,5 +112,92 @@ public class CommentQueryServiceTest {
 
     assertThat(result.size(), is(1));
     assertThat(result.get(0).getProfileData().isFollowing(), is(false));
+  }
+
+  @Test
+  public void should_find_comments_with_cursor_empty_list() {
+    String articleId = "article-123";
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.NEXT);
+    
+    when(commentReadService.findByArticleIdWithCursor(articleId, page)).thenReturn(new ArrayList<>());
+
+    CursorPager<CommentData> result = commentQueryService.findByArticleIdWithCursor(articleId, user, page);
+
+    assertThat(result.getData().isEmpty(), is(true));
+    assertThat(result.hasNext(), is(false));
+  }
+
+  @Test
+  public void should_find_comments_with_cursor_with_user() {
+    String articleId = "article-123";
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.NEXT);
+    CommentData comment1 = createCommentData("comment-1", "author-1");
+    CommentData comment2 = createCommentData("comment-2", "author-2");
+    
+    when(commentReadService.findByArticleIdWithCursor(articleId, page)).thenReturn(Arrays.asList(comment1, comment2));
+    when(userRelationshipQueryService.followingAuthors(eq(user.getId()), any()))
+        .thenReturn(new HashSet<>(Arrays.asList("author-1")));
+
+    CursorPager<CommentData> result = commentQueryService.findByArticleIdWithCursor(articleId, user, page);
+
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.getData().get(0).getProfileData().isFollowing(), is(true));
+    assertThat(result.getData().get(1).getProfileData().isFollowing(), is(false));
+    assertThat(result.hasNext(), is(false));
+  }
+
+  @Test
+  public void should_find_comments_with_cursor_without_user() {
+    String articleId = "article-123";
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.NEXT);
+    CommentData comment = createCommentData("comment-1", "author-1");
+    
+    when(commentReadService.findByArticleIdWithCursor(articleId, page)).thenReturn(Arrays.asList(comment));
+
+    CursorPager<CommentData> result = commentQueryService.findByArticleIdWithCursor(articleId, null, page);
+
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().get(0).getProfileData().isFollowing(), is(false));
+  }
+
+  @Test
+  public void should_find_comments_with_cursor_has_extra() {
+    String articleId = "article-123";
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 2, CursorPager.Direction.NEXT);
+    CommentData comment1 = createCommentData("comment-1", "author-1");
+    CommentData comment2 = createCommentData("comment-2", "author-2");
+    CommentData comment3 = createCommentData("comment-3", "author-3");
+    
+    when(commentReadService.findByArticleIdWithCursor(articleId, page)).thenReturn(new ArrayList<>(Arrays.asList(comment1, comment2, comment3)));
+    when(userRelationshipQueryService.followingAuthors(eq(user.getId()), any()))
+        .thenReturn(new HashSet<>());
+
+    CursorPager<CommentData> result = commentQueryService.findByArticleIdWithCursor(articleId, user, page);
+
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.hasNext(), is(true));
+  }
+
+  @Test
+  public void should_find_comments_with_cursor_prev_direction() {
+    String articleId = "article-123";
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.PREV);
+    CommentData comment1 = createCommentData("comment-1", "author-1");
+    CommentData comment2 = createCommentData("comment-2", "author-2");
+    
+    when(commentReadService.findByArticleIdWithCursor(articleId, page)).thenReturn(new ArrayList<>(Arrays.asList(comment1, comment2)));
+    when(userRelationshipQueryService.followingAuthors(eq(user.getId()), any()))
+        .thenReturn(new HashSet<>());
+
+    CursorPager<CommentData> result = commentQueryService.findByArticleIdWithCursor(articleId, user, page);
+
+    assertThat(result.getData().size(), is(2));
+    // PREV direction reverses the list
+    assertThat(result.getData().get(0).getId(), is("comment-2"));
+    assertThat(result.getData().get(1).getId(), is("comment-1"));
   }
 }

@@ -14,6 +14,7 @@ import io.spring.core.user.User;
 import io.spring.infrastructure.mybatis.readservice.ArticleFavoritesReadService;
 import io.spring.infrastructure.mybatis.readservice.ArticleReadService;
 import io.spring.infrastructure.mybatis.readservice.UserRelationshipQueryService;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -178,5 +179,175 @@ public class ArticleQueryServiceTest {
 
     assertThat(result.getCount(), is(0));
     assertThat(result.getArticleDatas().isEmpty(), is(true));
+  }
+
+  @Test
+  public void should_find_article_by_slug_with_user() {
+    String slug = "test-article";
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    ArticleData articleData = createArticleData("article-123", slug);
+    
+    when(articleReadService.findBySlug(slug)).thenReturn(articleData);
+    when(articleFavoritesReadService.isUserFavorite(user.getId(), "article-123")).thenReturn(true);
+    when(articleFavoritesReadService.articleFavoriteCount("article-123")).thenReturn(5);
+    when(userRelationshipQueryService.isUserFollowing(user.getId(), "author-id")).thenReturn(true);
+
+    Optional<ArticleData> result = articleQueryService.findBySlug(slug, user);
+
+    assertThat(result.isPresent(), is(true));
+    assertThat(result.get().isFavorited(), is(true));
+    assertThat(result.get().getFavoritesCount(), is(5));
+    assertThat(result.get().getProfileData().isFollowing(), is(true));
+  }
+
+  @Test
+  public void should_find_recent_articles_with_cursor() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    ArticleData articleData = createArticleData("article-123", "test-article");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.NEXT);
+    
+    when(articleReadService.findArticlesWithCursor(null, null, null, page)).thenReturn(Arrays.asList("article-123"));
+    when(articleReadService.findArticles(Arrays.asList("article-123"))).thenReturn(Arrays.asList(articleData));
+    when(articleFavoritesReadService.articlesFavoriteCount(any())).thenReturn(Arrays.asList(new ArticleFavoriteCount("article-123", 5)));
+    when(articleFavoritesReadService.userFavorites(any(), eq(user))).thenReturn(new HashSet<>(Arrays.asList("article-123")));
+    when(userRelationshipQueryService.followingAuthors(eq(user.getId()), any())).thenReturn(new HashSet<>());
+
+    CursorPager<ArticleData> result = articleQueryService.findRecentArticlesWithCursor(null, null, null, page, user);
+
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.hasNext(), is(false));
+  }
+
+  @Test
+  public void should_return_empty_cursor_pager_when_no_articles() {
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.NEXT);
+    
+    when(articleReadService.findArticlesWithCursor(null, null, null, page)).thenReturn(Collections.emptyList());
+
+    CursorPager<ArticleData> result = articleQueryService.findRecentArticlesWithCursor(null, null, null, page, null);
+
+    assertThat(result.getData().isEmpty(), is(true));
+    assertThat(result.hasNext(), is(false));
+  }
+
+  @Test
+  public void should_find_recent_articles_with_cursor_has_extra() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    ArticleData articleData1 = createArticleData("article-1", "test-article-1");
+    ArticleData articleData2 = createArticleData("article-2", "test-article-2");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 1, CursorPager.Direction.NEXT);
+    
+    when(articleReadService.findArticlesWithCursor(null, null, null, page)).thenReturn(new ArrayList<>(Arrays.asList("article-1", "article-2")));
+    when(articleReadService.findArticles(Arrays.asList("article-1"))).thenReturn(Arrays.asList(articleData1));
+    when(articleFavoritesReadService.articlesFavoriteCount(any())).thenReturn(Arrays.asList(new ArticleFavoriteCount("article-1", 5)));
+    when(articleFavoritesReadService.userFavorites(any(), eq(user))).thenReturn(new HashSet<>());
+    when(userRelationshipQueryService.followingAuthors(eq(user.getId()), any())).thenReturn(new HashSet<>());
+
+    CursorPager<ArticleData> result = articleQueryService.findRecentArticlesWithCursor(null, null, null, page, user);
+
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.hasNext(), is(true));
+  }
+
+  @Test
+  public void should_find_recent_articles_with_cursor_prev_direction() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    ArticleData articleData = createArticleData("article-123", "test-article");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.PREV);
+    
+    when(articleReadService.findArticlesWithCursor(null, null, null, page)).thenReturn(Arrays.asList("article-123"));
+    when(articleReadService.findArticles(Arrays.asList("article-123"))).thenReturn(Arrays.asList(articleData));
+    when(articleFavoritesReadService.articlesFavoriteCount(any())).thenReturn(Arrays.asList(new ArticleFavoriteCount("article-123", 5)));
+    when(articleFavoritesReadService.userFavorites(any(), eq(user))).thenReturn(new HashSet<>());
+    when(userRelationshipQueryService.followingAuthors(eq(user.getId()), any())).thenReturn(new HashSet<>());
+
+    CursorPager<ArticleData> result = articleQueryService.findRecentArticlesWithCursor(null, null, null, page, user);
+
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.hasPrevious(), is(false));
+  }
+
+  @Test
+  public void should_find_user_feed_with_cursor() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    ArticleData articleData = createArticleData("article-123", "test-article");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.NEXT);
+    
+    when(userRelationshipQueryService.followedUsers(user.getId())).thenReturn(Arrays.asList("followed-user-1"));
+    when(articleReadService.findArticlesOfAuthorsWithCursor(Arrays.asList("followed-user-1"), page)).thenReturn(Arrays.asList(articleData));
+    when(articleFavoritesReadService.articlesFavoriteCount(any())).thenReturn(Arrays.asList(new ArticleFavoriteCount("article-123", 5)));
+    when(articleFavoritesReadService.userFavorites(any(), eq(user))).thenReturn(new HashSet<>());
+    when(userRelationshipQueryService.followingAuthors(eq(user.getId()), any())).thenReturn(new HashSet<>());
+
+    CursorPager<ArticleData> result = articleQueryService.findUserFeedWithCursor(user, page);
+
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.hasNext(), is(false));
+  }
+
+  @Test
+  public void should_return_empty_cursor_pager_when_no_followed_users() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.NEXT);
+    
+    when(userRelationshipQueryService.followedUsers(user.getId())).thenReturn(Collections.emptyList());
+
+    CursorPager<ArticleData> result = articleQueryService.findUserFeedWithCursor(user, page);
+
+    assertThat(result.getData().isEmpty(), is(true));
+    assertThat(result.hasNext(), is(false));
+  }
+
+  @Test
+  public void should_find_user_feed_with_cursor_has_extra() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    ArticleData articleData1 = createArticleData("article-1", "test-article-1");
+    ArticleData articleData2 = createArticleData("article-2", "test-article-2");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 1, CursorPager.Direction.NEXT);
+    
+    when(userRelationshipQueryService.followedUsers(user.getId())).thenReturn(Arrays.asList("followed-user-1"));
+    when(articleReadService.findArticlesOfAuthorsWithCursor(Arrays.asList("followed-user-1"), page)).thenReturn(new ArrayList<>(Arrays.asList(articleData1, articleData2)));
+    when(articleFavoritesReadService.articlesFavoriteCount(any())).thenReturn(Arrays.asList(new ArticleFavoriteCount("article-1", 5)));
+    when(articleFavoritesReadService.userFavorites(any(), eq(user))).thenReturn(new HashSet<>());
+    when(userRelationshipQueryService.followingAuthors(eq(user.getId()), any())).thenReturn(new HashSet<>());
+
+    CursorPager<ArticleData> result = articleQueryService.findUserFeedWithCursor(user, page);
+
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.hasNext(), is(true));
+  }
+
+  @Test
+  public void should_find_user_feed_with_cursor_prev_direction() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    ArticleData articleData = createArticleData("article-123", "test-article");
+    CursorPageParameter<DateTime> page = new CursorPageParameter<>(null, 10, CursorPager.Direction.PREV);
+    
+    when(userRelationshipQueryService.followedUsers(user.getId())).thenReturn(Arrays.asList("followed-user-1"));
+    when(articleReadService.findArticlesOfAuthorsWithCursor(Arrays.asList("followed-user-1"), page)).thenReturn(Arrays.asList(articleData));
+    when(articleFavoritesReadService.articlesFavoriteCount(any())).thenReturn(Arrays.asList(new ArticleFavoriteCount("article-123", 5)));
+    when(articleFavoritesReadService.userFavorites(any(), eq(user))).thenReturn(new HashSet<>());
+    when(userRelationshipQueryService.followingAuthors(eq(user.getId()), any())).thenReturn(new HashSet<>());
+
+    CursorPager<ArticleData> result = articleQueryService.findUserFeedWithCursor(user, page);
+
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.hasPrevious(), is(false));
+  }
+
+  @Test
+  public void should_find_recent_articles_without_user() {
+    ArticleData articleData = createArticleData("article-123", "test-article");
+    Page page = new Page(0, 10);
+    
+    when(articleReadService.queryArticles(null, null, null, page)).thenReturn(Arrays.asList("article-123"));
+    when(articleReadService.countArticle(null, null, null)).thenReturn(1);
+    when(articleReadService.findArticles(Arrays.asList("article-123"))).thenReturn(Arrays.asList(articleData));
+    when(articleFavoritesReadService.articlesFavoriteCount(any())).thenReturn(Arrays.asList(new ArticleFavoriteCount("article-123", 5)));
+
+    ArticleDataList result = articleQueryService.findRecentArticles(null, null, null, page, null);
+
+    assertThat(result.getCount(), is(1));
+    assertThat(result.getArticleDatas().size(), is(1));
   }
 }

@@ -1,9 +1,12 @@
 package io.spring.core.article;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Arrays;
+import org.joda.time.DateTime;
 import org.junit.jupiter.api.Test;
 
 public class ArticleTest {
@@ -98,5 +101,66 @@ public class ArticleTest {
   public void should_generate_slug_statically() {
     assertThat(Article.toSlug("Hello World"), is("hello-world"));
     assertThat(Article.toSlug("Test Article"), is("test-article"));
+  }
+
+  @Test
+  public void should_have_id_based_equals() {
+    Article article1 = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-1");
+    Article article2 = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-1");
+    assertThat(article1.equals(article2), is(false));
+    assertThat(article1.equals(article1), is(true));
+  }
+
+  @Test
+  public void should_not_equal_null() {
+    Article article = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-1");
+    assertThat(article.equals(null), is(false));
+  }
+
+  @Test
+  public void should_not_equal_different_type() {
+    Article article = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-1");
+    assertThat(article.equals("string"), is(false));
+  }
+
+  @Test
+  public void should_have_consistent_hashcode() {
+    Article article = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-1");
+    int hashCode1 = article.hashCode();
+    int hashCode2 = article.hashCode();
+    assertThat(hashCode1, is(hashCode2));
+  }
+
+  @Test
+  public void should_have_different_hashcode_for_different_ids() {
+    Article article1 = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-1");
+    Article article2 = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-1");
+    assertThat(article1.hashCode(), is(not(article2.hashCode())));
+  }
+
+  @Test
+  public void should_create_article_with_custom_datetime() {
+    DateTime customTime = new DateTime(2020, 1, 1, 0, 0);
+    Article article = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-1", customTime);
+    assertThat(article.getCreatedAt(), is(customTime));
+    assertThat(article.getUpdatedAt(), is(customTime));
+  }
+
+  @Test
+  public void should_have_no_args_constructor() {
+    Article article = new Article();
+    assertThat(article, is(notNullValue()));
+  }
+
+  @Test
+  public void should_get_user_id() {
+    Article article = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-123");
+    assertThat(article.getUserId(), is("user-123"));
+  }
+
+  @Test
+  public void should_get_id() {
+    Article article = new Article("Title", "Desc", "Body", Arrays.asList("java"), "user-1");
+    assertThat(article.getId(), is(notNullValue()));
   }
 }

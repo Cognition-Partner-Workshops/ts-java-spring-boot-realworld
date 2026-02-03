@@ -136,4 +136,37 @@ public class UserTest {
     
     assertThat(user, is(notNullValue()));
   }
+
+  @Test
+  public void should_have_consistent_hashcode() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    int hashCode1 = user.hashCode();
+    int hashCode2 = user.hashCode();
+    
+    assertThat(hashCode1, is(hashCode2));
+  }
+
+  @Test
+  public void should_handle_null_id_in_equals() {
+    User user1 = new User();
+    User user2 = new User();
+    
+    assertThat(user1.equals(user2), is(true));
+  }
+
+  @Test
+  public void should_not_equal_when_one_id_null() {
+    User user1 = new User("test@test.com", "testuser", "password", "bio", "image");
+    User user2 = new User();
+    
+    assertThat(user1.equals(user2), is(false));
+  }
+
+  @Test
+  public void should_not_equal_when_other_id_null() {
+    User user1 = new User();
+    User user2 = new User("test@test.com", "testuser", "password", "bio", "image");
+    
+    assertThat(user1.equals(user2), is(false));
+  }
 }

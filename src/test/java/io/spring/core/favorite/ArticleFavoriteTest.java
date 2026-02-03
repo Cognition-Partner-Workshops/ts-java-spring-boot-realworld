@@ -86,4 +86,60 @@ public class ArticleFavoriteTest {
     
     assertThat(favorite1.equals(favorite2), is(false));
   }
+
+  @Test
+  public void should_handle_null_article_id() {
+    ArticleFavorite favorite1 = new ArticleFavorite(null, "user-1");
+    ArticleFavorite favorite2 = new ArticleFavorite(null, "user-1");
+    
+    assertThat(favorite1.equals(favorite2), is(true));
+  }
+
+  @Test
+  public void should_handle_null_user_id() {
+    ArticleFavorite favorite1 = new ArticleFavorite("article-1", null);
+    ArticleFavorite favorite2 = new ArticleFavorite("article-1", null);
+    
+    assertThat(favorite1.equals(favorite2), is(true));
+  }
+
+  @Test
+  public void should_not_equal_when_one_article_id_null() {
+    ArticleFavorite favorite1 = new ArticleFavorite("article-1", "user-1");
+    ArticleFavorite favorite2 = new ArticleFavorite(null, "user-1");
+    
+    assertThat(favorite1.equals(favorite2), is(false));
+  }
+
+  @Test
+  public void should_not_equal_when_one_user_id_null() {
+    ArticleFavorite favorite1 = new ArticleFavorite("article-1", "user-1");
+    ArticleFavorite favorite2 = new ArticleFavorite("article-1", null);
+    
+    assertThat(favorite1.equals(favorite2), is(false));
+  }
+
+  @Test
+  public void should_not_equal_when_other_article_id_null() {
+    ArticleFavorite favorite1 = new ArticleFavorite(null, "user-1");
+    ArticleFavorite favorite2 = new ArticleFavorite("article-1", "user-1");
+    
+    assertThat(favorite1.equals(favorite2), is(false));
+  }
+
+  @Test
+  public void should_not_equal_when_other_user_id_null() {
+    ArticleFavorite favorite1 = new ArticleFavorite("article-1", null);
+    ArticleFavorite favorite2 = new ArticleFavorite("article-1", "user-1");
+    
+    assertThat(favorite1.equals(favorite2), is(false));
+  }
+
+  @Test
+  public void should_handle_both_fields_null() {
+    ArticleFavorite favorite1 = new ArticleFavorite(null, null);
+    ArticleFavorite favorite2 = new ArticleFavorite(null, null);
+    
+    assertThat(favorite1.equals(favorite2), is(true));
+  }
 }
