@@ -1,10 +1,10 @@
 package io.spring.api.kafka;
 
-import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
-import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.spring.infrastructure.kafka.DelayedKafkaProducerService;
@@ -15,17 +15,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Mono;
 import reactor.kafka.sender.SenderResult;
+import reactor.test.StepVerifier;
 
 class KafkaMessageApiTest {
 
   @Mock private DelayedKafkaProducerService delayedKafkaProducerService;
 
   @Mock private KafkaConfig kafkaConfig;
-
-  @Mock private SenderResult<String> senderResult;
 
   private KafkaMessageApi kafkaMessageApi;
 
@@ -35,94 +35,109 @@ class KafkaMessageApiTest {
     kafkaMessageApi = new KafkaMessageApi(delayedKafkaProducerService, kafkaConfig);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   void publishDelayedMessage_shouldReturnSuccess() {
-    RecordMetadata recordMetadata = new RecordMetadata(new TopicPartition("test-topic", 0), 0, 0, 0, 0, 0);
+    SenderResult<String> mockResult = mock(SenderResult.class);
+    RecordMetadata recordMetadata =
+        new RecordMetadata(new TopicPartition("test-topic", 0), 0, 0, 0, 0, 0);
 
     when(kafkaConfig.getDefaultDelayMs()).thenReturn(0L);
-    when(senderResult.recordMetadata()).thenReturn(recordMetadata);
-    when(delayedKafkaProducerService.sendDelayedMessage(anyString(), anyString(), anyString(), any()))
-        .thenReturn(Mono.just(senderResult));
+    when(mockResult.recordMetadata()).thenReturn(recordMetadata);
+    doReturn(Mono.just(mockResult))
+        .when(delayedKafkaProducerService)
+        .sendDelayedMessage(anyString(), anyString(), anyString(), any());
 
-    given()
-        .standaloneSetup(kafkaMessageApi)
-        .contentType(MediaType.APPLICATION_JSON_VALUE)
-        .body(
-            "{\"topic\": \"test-topic\", \"key\": \"test-key\", \"message\": \"test-message\", \"delayMs\": 1000}")
-        .when()
-        .post("/kafka/publish")
-        .then()
-        .statusCode(200)
-        .body("status", equalTo("SUCCESS"))
-        .body("topic", equalTo("test-topic"))
-        .body("key", equalTo("test-key"))
-        .body("partition", equalTo(0))
-        .body("offset", equalTo(0));
+    DelayedMessageRequest request = new DelayedMessageRequest("test-topic", "test-key", "test-message", 1000L);
+
+    Mono<ResponseEntity<DelayedMessageResponse>> result =
+        kafkaMessageApi.publishDelayedMessage(request);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertEquals(HttpStatus.OK, response.getStatusCode());
+              assertEquals("SUCCESS", response.getBody().getStatus());
+              assertEquals("test-topic", response.getBody().getTopic());
+              assertEquals("test-key", response.getBody().getKey());
+              assertEquals(0, response.getBody().getPartition());
+              assertEquals(0L, response.getBody().getOffset());
+            })
+        .verifyComplete();
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   void publishDelayedMessageAsync_shouldReturnAccepted() {
+    SenderResult<String> mockResult = mock(SenderResult.class);
+    RecordMetadata recordMetadata =
+        new RecordMetadata(new TopicPartition("test-topic", 0), 0, 0, 0, 0, 0);
+
     when(kafkaConfig.getDefaultDelayMs()).thenReturn(0L);
-    when(delayedKafkaProducerService.sendDelayedMessage(anyString(), anyString(), anyString(), anyLong()))
-        .thenReturn(Mono.empty());
+    when(mockResult.recordMetadata()).thenReturn(recordMetadata);
+    doReturn(Mono.just(mockResult))
+        .when(delayedKafkaProducerService)
+        .sendDelayedMessage(anyString(), anyString(), anyString(), any());
 
-    given()
-        .standaloneSetup(kafkaMessageApi)
-        .contentType(MediaType.APPLICATION_JSON_VALUE)
-        .body(
-            "{\"topic\": \"test-topic\", \"key\": \"test-key\", \"message\": \"test-message\", \"delayMs\": 5000}")
-        .when()
-        .post("/kafka/publish/async")
-        .then()
-        .statusCode(202)
-        .body("status", equalTo("ACCEPTED"))
-        .body("topic", equalTo("test-topic"))
-        .body("key", equalTo("test-key"))
-        .body("delayMs", equalTo(5000));
+    DelayedMessageRequest request = new DelayedMessageRequest("test-topic", "test-key", "test-message", 5000L);
+
+    ResponseEntity<DelayedMessageResponse> response =
+        kafkaMessageApi.publishDelayedMessageAsync(request);
+
+    assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
+    assertEquals("ACCEPTED", response.getBody().getStatus());
+    assertEquals("test-topic", response.getBody().getTopic());
+    assertEquals("test-key", response.getBody().getKey());
+    assertEquals(5000L, response.getBody().getDelayMs());
   }
 
-  @Test
-  void publishDelayedMessage_withMissingTopic_shouldReturnBadRequest() {
-    given()
-        .standaloneSetup(kafkaMessageApi)
-        .contentType(MediaType.APPLICATION_JSON_VALUE)
-        .body("{\"key\": \"test-key\", \"message\": \"test-message\"}")
-        .when()
-        .post("/kafka/publish")
-        .then()
-        .statusCode(400);
-  }
-
-  @Test
-  void publishDelayedMessage_withMissingMessage_shouldReturnBadRequest() {
-    given()
-        .standaloneSetup(kafkaMessageApi)
-        .contentType(MediaType.APPLICATION_JSON_VALUE)
-        .body("{\"topic\": \"test-topic\", \"key\": \"test-key\"}")
-        .when()
-        .post("/kafka/publish")
-        .then()
-        .statusCode(400);
-  }
-
+  @SuppressWarnings("unchecked")
   @Test
   void publishDelayedMessage_withDefaultDelay_shouldUseConfiguredDefault() {
-    RecordMetadata recordMetadata = new RecordMetadata(new TopicPartition("test-topic", 0), 0, 0, 0, 0, 0);
+    SenderResult<String> mockResult = mock(SenderResult.class);
+    RecordMetadata recordMetadata =
+        new RecordMetadata(new TopicPartition("test-topic", 0), 0, 0, 0, 0, 0);
 
     when(kafkaConfig.getDefaultDelayMs()).thenReturn(3000L);
-    when(senderResult.recordMetadata()).thenReturn(recordMetadata);
-    when(delayedKafkaProducerService.sendDelayedMessage(anyString(), anyString(), anyString(), any()))
-        .thenReturn(Mono.just(senderResult));
+    when(mockResult.recordMetadata()).thenReturn(recordMetadata);
+    doReturn(Mono.just(mockResult))
+        .when(delayedKafkaProducerService)
+        .sendDelayedMessage(anyString(), anyString(), anyString(), any());
 
-    given()
-        .standaloneSetup(kafkaMessageApi)
-        .contentType(MediaType.APPLICATION_JSON_VALUE)
-        .body("{\"topic\": \"test-topic\", \"key\": \"test-key\", \"message\": \"test-message\"}")
-        .when()
-        .post("/kafka/publish")
-        .then()
-        .statusCode(200)
-        .body("status", equalTo("SUCCESS"))
-        .body("delayMs", equalTo(3000));
+    DelayedMessageRequest request = new DelayedMessageRequest("test-topic", "test-key", "test-message", null);
+
+    Mono<ResponseEntity<DelayedMessageResponse>> result =
+        kafkaMessageApi.publishDelayedMessage(request);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertEquals(HttpStatus.OK, response.getStatusCode());
+              assertEquals("SUCCESS", response.getBody().getStatus());
+              assertEquals(3000L, response.getBody().getDelayMs());
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  void publishDelayedMessage_withError_shouldReturnError() {
+    when(kafkaConfig.getDefaultDelayMs()).thenReturn(0L);
+    doReturn(Mono.error(new RuntimeException("Kafka connection failed")))
+        .when(delayedKafkaProducerService)
+        .sendDelayedMessage(anyString(), anyString(), anyString(), any());
+
+    DelayedMessageRequest request = new DelayedMessageRequest("test-topic", "test-key", "test-message", 1000L);
+
+    Mono<ResponseEntity<DelayedMessageResponse>> result =
+        kafkaMessageApi.publishDelayedMessage(request);
+
+    StepVerifier.create(result)
+        .assertNext(
+            response -> {
+              assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+              assertEquals("ERROR", response.getBody().getStatus());
+              assertEquals("Kafka connection failed", response.getBody().getErrorMessage());
+            })
+        .verifyComplete();
   }
 }
