@@ -14,6 +14,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+/**
+ * Application service for user management operations.
+ *
+ * <p>This service handles the creation and updating of user accounts. It encapsulates the business
+ * logic for user registration including password encryption and default profile image assignment.
+ *
+ * <p>All input parameters are validated using Bean Validation annotations before processing.
+ *
+ * @see io.spring.core.user.User
+ * @see RegisterParam
+ * @see UpdateUserCommand
+ */
 @Service
 @Validated
 public class UserService {

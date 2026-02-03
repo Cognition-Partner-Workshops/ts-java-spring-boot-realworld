@@ -24,6 +24,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API controller for individual article operations.
+ *
+ * <p>This controller handles endpoints for retrieving, updating, and deleting individual articles
+ * identified by their URL-friendly slug. Update and delete operations require the authenticated
+ * user to be the article's author.
+ *
+ * <p>Endpoints:
+ *
+ * <ul>
+ *   <li>GET /articles/{slug} - Retrieve an article by slug
+ *   <li>PUT /articles/{slug} - Update an article (author only)
+ *   <li>DELETE /articles/{slug} - Delete an article (author only)
+ * </ul>
+ *
+ * @see io.spring.core.article.Article
+ * @see ArticlesApi
+ */
 @RestController
 @RequestMapping(path = "/articles/{slug}")
 @AllArgsConstructor

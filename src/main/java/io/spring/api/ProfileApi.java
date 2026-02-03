@@ -18,6 +18,24 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API controller for user profile and follow operations.
+ *
+ * <p>This controller handles endpoints for viewing user profiles and managing follow
+ * relationships. Users can follow and unfollow other users, which affects their personalized
+ * article feed.
+ *
+ * <p>Endpoints:
+ *
+ * <ul>
+ *   <li>GET /profiles/{username} - View a user's public profile
+ *   <li>POST /profiles/{username}/follow - Follow a user
+ *   <li>DELETE /profiles/{username}/follow - Unfollow a user
+ * </ul>
+ *
+ * @see io.spring.core.user.User
+ * @see io.spring.core.user.FollowRelation
+ */
 @RestController
 @RequestMapping(path = "profiles/{username}")
 @AllArgsConstructor

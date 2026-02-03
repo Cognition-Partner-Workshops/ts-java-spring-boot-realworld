@@ -11,6 +11,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.joda.time.DateTime;
 
+/**
+ * Domain entity representing a blog article in the RealWorld application.
+ *
+ * <p>An article contains a title, description, body content, and associated tags. Each article has
+ * a unique slug derived from its title for URL-friendly identification, and tracks creation and
+ * update timestamps.
+ *
+ * <p>Articles are authored by users and can be favorited by other users. The slug is automatically
+ * generated from the title and used as an alternate key for article lookups.
+ *
+ * @see Tag
+ * @see io.spring.core.user.User
+ */
 @Getter
 @NoArgsConstructor
 @EqualsAndHashCode(of = {"id"})

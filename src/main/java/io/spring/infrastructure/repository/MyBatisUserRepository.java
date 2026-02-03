@@ -8,6 +8,17 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+/**
+ * MyBatis implementation of the UserRepository interface.
+ *
+ * <p>This repository handles persistence operations for users and follow relationships using
+ * MyBatis as the data mapper. It provides CRUD operations for user entities and manages the
+ * follow_relation join table for user-to-user following relationships.
+ *
+ * @see io.spring.core.user.User
+ * @see io.spring.core.user.FollowRelation
+ * @see io.spring.core.user.UserRepository
+ */
 @Repository
 public class MyBatisUserRepository implements UserRepository {
   private final UserMapper userMapper;

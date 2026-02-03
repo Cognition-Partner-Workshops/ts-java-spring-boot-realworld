@@ -6,6 +6,19 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+/**
+ * Domain entity representing a user account in the RealWorld application.
+ *
+ * <p>Users can register, authenticate, and interact with the platform by creating articles, posting
+ * comments, following other users, and favoriting articles. User passwords are stored using BCrypt
+ * encryption.
+ *
+ * <p>Each user has a unique email and username, along with optional profile information including a
+ * bio and profile image URL.
+ *
+ * @see FollowRelation
+ * @see io.spring.core.article.Article
+ */
 @Getter
 @NoArgsConstructor
 @EqualsAndHashCode(of = {"id"})

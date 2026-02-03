@@ -8,6 +8,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API controller for tag operations.
+ *
+ * <p>This controller provides a public endpoint for retrieving all available tags in the system.
+ * Tags are used to categorize articles and enable filtering of articles by topic.
+ *
+ * <p>Endpoints:
+ *
+ * <ul>
+ *   <li>GET /tags - Retrieve all available tags
+ * </ul>
+ *
+ * @see io.spring.core.article.Tag
+ */
 @RestController
 @RequestMapping(path = "tags")
 @AllArgsConstructor

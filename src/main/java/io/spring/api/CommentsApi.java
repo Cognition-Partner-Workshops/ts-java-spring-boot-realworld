@@ -29,6 +29,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API controller for comment operations on articles.
+ *
+ * <p>This controller handles endpoints for creating, listing, and deleting comments on articles.
+ * Comments are associated with articles via the article's slug. Delete operations require the
+ * authenticated user to be either the comment author or the article author.
+ *
+ * <p>Endpoints:
+ *
+ * <ul>
+ *   <li>POST /articles/{slug}/comments - Create a comment on an article
+ *   <li>GET /articles/{slug}/comments - List all comments on an article
+ *   <li>DELETE /articles/{slug}/comments/{id} - Delete a comment
+ * </ul>
+ *
+ * @see io.spring.core.comment.Comment
+ * @see io.spring.core.article.Article
+ */
 @RestController
 @RequestMapping(path = "/articles/{slug}/comments")
 @AllArgsConstructor

@@ -18,6 +18,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API controller for article collection operations.
+ *
+ * <p>This controller handles endpoints for creating new articles, listing articles with various
+ * filters, and retrieving the authenticated user's personalized feed. The feed contains articles
+ * from authors the user follows.
+ *
+ * <p>Endpoints:
+ *
+ * <ul>
+ *   <li>POST /articles - Create a new article (requires authentication)
+ *   <li>GET /articles - List articles with optional filters (tag, author, favorited)
+ *   <li>GET /articles/feed - Get personalized feed (requires authentication)
+ * </ul>
+ *
+ * @see io.spring.core.article.Article
+ * @see ArticleApi
+ */
 @RestController
 @RequestMapping(path = "/articles")
 @AllArgsConstructor

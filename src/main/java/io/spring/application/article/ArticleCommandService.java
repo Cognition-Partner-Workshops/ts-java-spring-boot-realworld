@@ -8,6 +8,18 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+/**
+ * Application service for article write operations (Command side of CQRS).
+ *
+ * <p>This service handles the creation and updating of articles. It implements the command side of
+ * the CQRS pattern, separating write operations from read operations handled by {@link
+ * io.spring.application.ArticleQueryService}.
+ *
+ * <p>All input parameters are validated using Bean Validation annotations before processing.
+ *
+ * @see io.spring.core.article.Article
+ * @see io.spring.application.ArticleQueryService
+ */
 @Service
 @Validated
 @AllArgsConstructor

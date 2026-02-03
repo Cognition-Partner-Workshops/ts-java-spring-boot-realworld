@@ -9,6 +9,15 @@ import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/**
+ * Application service for user profile read operations.
+ *
+ * <p>This service handles retrieval of user profile information. It enriches profile data with the
+ * follow relationship status between the current user and the profile being viewed.
+ *
+ * @see io.spring.application.data.ProfileData
+ * @see io.spring.core.user.User
+ */
 @Component
 @AllArgsConstructor
 public class ProfileQueryService {

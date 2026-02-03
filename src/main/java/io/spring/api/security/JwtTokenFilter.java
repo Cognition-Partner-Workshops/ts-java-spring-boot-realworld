@@ -15,6 +15,20 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * Spring Security filter for JWT token authentication.
+ *
+ * <p>This filter intercepts all HTTP requests and validates JWT tokens from the Authorization
+ * header. When a valid token is found, it extracts the user ID, loads the user from the database,
+ * and populates the Spring Security context with the authenticated user.
+ *
+ * <p>The filter expects tokens in the format "Token {jwt}" or "Bearer {jwt}" in the Authorization
+ * header. If no token is present or the token is invalid, the request proceeds without
+ * authentication (allowing public endpoints to be accessed).
+ *
+ * @see io.spring.core.service.JwtService
+ * @see WebSecurityConfig
+ */
 @SuppressWarnings("SpringJavaAutowiringInspection")
 public class JwtTokenFilter extends OncePerRequestFilter {
   @Autowired private UserRepository userRepository;

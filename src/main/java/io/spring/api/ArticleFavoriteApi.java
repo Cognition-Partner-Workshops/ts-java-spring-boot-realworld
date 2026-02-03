@@ -18,6 +18,23 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API controller for article favorite operations.
+ *
+ * <p>This controller handles endpoints for favoriting and unfavoriting articles. Favoriting allows
+ * users to bookmark articles they find interesting, which also contributes to the article's
+ * favorites count displayed to all users.
+ *
+ * <p>Endpoints:
+ *
+ * <ul>
+ *   <li>POST /articles/{slug}/favorite - Favorite an article
+ *   <li>DELETE /articles/{slug}/favorite - Unfavorite an article
+ * </ul>
+ *
+ * @see io.spring.core.favorite.ArticleFavorite
+ * @see io.spring.core.article.Article
+ */
 @RestController
 @RequestMapping(path = "articles/{slug}/favorite")
 @AllArgsConstructor

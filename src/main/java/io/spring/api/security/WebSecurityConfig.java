@@ -18,6 +18,27 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+/**
+ * Spring Security configuration for the RealWorld application.
+ *
+ * <p>This configuration class sets up the security filter chain with stateless JWT-based
+ * authentication. It defines which endpoints are public and which require authentication, and
+ * configures CORS settings for cross-origin requests.
+ *
+ * <p>Public endpoints include user registration, login, article listing, profile viewing, and tag
+ * retrieval. The user feed and all write operations require authentication.
+ *
+ * <p>Key security features:
+ *
+ * <ul>
+ *   <li>Stateless session management (no server-side sessions)
+ *   <li>JWT token validation via JwtTokenFilter
+ *   <li>BCrypt password encoding
+ *   <li>CORS support for frontend integration
+ * </ul>
+ *
+ * @see JwtTokenFilter
+ */
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {

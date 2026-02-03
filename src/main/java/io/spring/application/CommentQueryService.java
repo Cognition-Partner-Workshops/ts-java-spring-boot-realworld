@@ -14,6 +14,19 @@ import lombok.AllArgsConstructor;
 import org.joda.time.DateTime;
 import org.springframework.stereotype.Service;
 
+/**
+ * Application service for comment read operations.
+ *
+ * <p>This service handles all comment retrieval operations including finding comments by ID and
+ * listing comments for a specific article. It enriches comment data with author profile information
+ * and whether the current user follows the comment author.
+ *
+ * <p>Supports both standard list retrieval and cursor-based pagination for efficient deep
+ * pagination.
+ *
+ * @see io.spring.application.data.CommentData
+ * @see io.spring.core.comment.Comment
+ */
 @Service
 @AllArgsConstructor
 public class CommentQueryService {

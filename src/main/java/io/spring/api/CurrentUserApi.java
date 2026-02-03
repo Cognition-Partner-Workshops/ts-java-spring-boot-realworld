@@ -20,6 +20,22 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API controller for current authenticated user operations.
+ *
+ * <p>This controller handles endpoints for retrieving and updating the currently authenticated
+ * user's profile. All endpoints require a valid JWT token in the Authorization header.
+ *
+ * <p>Endpoints:
+ *
+ * <ul>
+ *   <li>GET /user - Get the current user's profile
+ *   <li>PUT /user - Update the current user's profile
+ * </ul>
+ *
+ * @see io.spring.core.user.User
+ * @see io.spring.application.data.UserWithToken
+ */
 @RestController
 @RequestMapping(path = "/user")
 @AllArgsConstructor

@@ -4,6 +4,16 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+/**
+ * Domain entity representing a user's favorite on an article.
+ *
+ * <p>This join entity captures the many-to-many relationship between users and articles they have
+ * favorited. Favoriting an article allows users to bookmark content they find interesting and
+ * contributes to the article's favorites count.
+ *
+ * @see io.spring.core.article.Article
+ * @see io.spring.core.user.User
+ */
 @NoArgsConstructor
 @Getter
 @EqualsAndHashCode

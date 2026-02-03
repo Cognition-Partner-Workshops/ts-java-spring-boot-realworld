@@ -27,6 +27,23 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST API controller for user registration and authentication.
+ *
+ * <p>This controller handles public endpoints for creating new user accounts and authenticating
+ * existing users. Upon successful registration or login, a JWT token is returned for subsequent
+ * authenticated requests.
+ *
+ * <p>Endpoints:
+ *
+ * <ul>
+ *   <li>POST /users - Register a new user account
+ *   <li>POST /users/login - Authenticate and obtain JWT token
+ * </ul>
+ *
+ * @see io.spring.core.user.User
+ * @see io.spring.application.data.UserWithToken
+ */
 @RestController
 @AllArgsConstructor
 public class UsersApi {

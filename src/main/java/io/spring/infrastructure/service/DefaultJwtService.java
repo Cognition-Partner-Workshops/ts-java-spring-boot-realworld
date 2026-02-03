@@ -14,6 +14,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * Default implementation of the JwtService interface using JJWT library.
+ *
+ * <p>This service handles JWT token generation and validation for user authentication. Tokens are
+ * signed using the HS512 algorithm with a configurable secret key and have a configurable
+ * expiration time (default 24 hours).
+ *
+ * <p>The JWT payload contains the user ID as the subject claim, which is extracted during token
+ * validation to identify the authenticated user.
+ *
+ * @see io.spring.core.service.JwtService
+ * @see io.spring.api.security.JwtTokenFilter
+ */
 @Component
 public class DefaultJwtService implements JwtService {
   private final SecretKey signingKey;

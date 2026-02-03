@@ -8,6 +8,19 @@ import java.util.Optional;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * MyBatis implementation of the ArticleRepository interface.
+ *
+ * <p>This repository handles persistence operations for articles using MyBatis as the data mapper.
+ * It manages article CRUD operations and handles the many-to-many relationship between articles and
+ * tags through the article_tags join table.
+ *
+ * <p>Tag management is handled atomically within transactions - existing tags are reused by name,
+ * and new tags are created as needed when saving articles.
+ *
+ * @see io.spring.core.article.Article
+ * @see io.spring.core.article.ArticleRepository
+ */
 @Repository
 public class MyBatisArticleRepository implements ArticleRepository {
   private ArticleMapper articleMapper;

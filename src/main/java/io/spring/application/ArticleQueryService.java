@@ -20,6 +20,24 @@ import lombok.AllArgsConstructor;
 import org.joda.time.DateTime;
 import org.springframework.stereotype.Service;
 
+/**
+ * Application service for article read operations (Query side of CQRS).
+ *
+ * <p>This service handles all article retrieval operations including finding articles by ID or
+ * slug, listing articles with filters, and generating personalized user feeds. It implements the
+ * query side of the CQRS pattern, separating read operations from write operations handled by
+ * {@link io.spring.application.article.ArticleCommandService}.
+ *
+ * <p>The service enriches article data with additional information such as favorite counts,
+ * whether the current user has favorited the article, and whether the current user follows the
+ * article's author.
+ *
+ * <p>Supports both offset-based pagination (traditional page numbers) and cursor-based pagination
+ * (more efficient for deep pagination).
+ *
+ * @see io.spring.application.data.ArticleData
+ * @see io.spring.application.article.ArticleCommandService
+ */
 @Service
 @AllArgsConstructor
 public class ArticleQueryService {
