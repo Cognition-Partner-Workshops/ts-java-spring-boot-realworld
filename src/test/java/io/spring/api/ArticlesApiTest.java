@@ -16,11 +16,12 @@ import io.spring.application.article.ArticleCommandService;
 import io.spring.application.data.ArticleData;
 import io.spring.application.data.ProfileData;
 import io.spring.core.article.Article;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.joda.time.DateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,7 @@ public class ArticlesApiTest extends TestWithCurrentUser {
     List<String> tagList = asList("reactjs", "angularjs", "dragons");
     Map<String, Object> param = prepareParam(title, description, body, tagList);
 
+    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
     ArticleData articleData =
         new ArticleData(
             "123",
@@ -63,8 +65,8 @@ public class ArticlesApiTest extends TestWithCurrentUser {
             body,
             false,
             0,
-            new DateTime(),
-            new DateTime(),
+            now,
+            now,
             tagList,
             new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
 
@@ -123,6 +125,7 @@ public class ArticlesApiTest extends TestWithCurrentUser {
     String[] tagList = {"reactjs", "angularjs", "dragons"};
     Map<String, Object> param = prepareParam(title, description, body, asList(tagList));
 
+    OffsetDateTime now2 = OffsetDateTime.now(ZoneOffset.UTC);
     ArticleData articleData =
         new ArticleData(
             "123",
@@ -132,8 +135,8 @@ public class ArticlesApiTest extends TestWithCurrentUser {
             body,
             false,
             0,
-            new DateTime(),
-            new DateTime(),
+            now2,
+            now2,
             asList(tagList),
             new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
 
