@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  user-auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:sqlite:/data/user-auth.db
+      - JWT_SECRET=${JWT_SECRET:-changeme-use-environment-variable-in-production}
+      - JWT_SESSIONTIME=86400
+    volumes:
+      - user-auth-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  user-auth-data:
