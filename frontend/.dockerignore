@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+out/
+
+# IDE files
+.idea/
+.vscode/
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test files
+coverage/

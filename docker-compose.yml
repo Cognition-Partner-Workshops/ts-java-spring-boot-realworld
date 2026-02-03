@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Spring Boot Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: realworld-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend-data:/app/data
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:sqlite:/app/data/dev.db
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - realworld-network
+    restart: unless-stopped
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: realworld-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - realworld-network
+    restart: unless-stopped
+
+networks:
+  realworld-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+    driver: local

@@ -98,7 +98,50 @@ The frontend will run on http://localhost:3000 and connect to the backend on por
 # Try it out with [Docker](https://www.docker.com/)
 
 You'll need Docker installed.
-	
+
+## Using Docker Compose (Recommended)
+
+The easiest way to run the full application stack is with Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+This will start both the backend (port 8080) and frontend (port 3000) services. The backend API will be available at http://localhost:8080 and the frontend at http://localhost:3000.
+
+To run in detached mode:
+```bash
+docker-compose up -d --build
+```
+
+To stop the services:
+```bash
+docker-compose down
+```
+
+To stop and remove volumes (database data):
+```bash
+docker-compose down -v
+```
+
+## Building Individual Images
+
+### Backend Only
+```bash
+docker build -t realworld-backend .
+docker run -p 8080:8080 realworld-backend
+```
+
+### Frontend Only
+```bash
+docker build -t realworld-frontend ./frontend
+docker run -p 3000:3000 realworld-frontend
+```
+
+## Using Spring Boot Buildpacks (Alternative)
+
+You can also use Spring Boot's built-in Buildpacks support:
+
     ./gradlew bootBuildImage --imageName spring-boot-realworld-example-app
     docker run -p 8081:8080 spring-boot-realworld-example-app
 
