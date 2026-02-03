@@ -1,28 +1,22 @@
 package io.spring;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import java.io.IOException;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 @Configuration
 public class JacksonCustomizations {
 
   @Bean
-  public Module realWorldModules() {
-    return new RealWorldModules();
-  }
-
-  public static class RealWorldModules extends SimpleModule {
-    public RealWorldModules() {
-      addSerializer(DateTime.class, new DateTimeSerializer());
-    }
+  public SimpleModule realWorldModules() {
+    SimpleModule module = new SimpleModule();
+    module.addSerializer(DateTime.class, new DateTimeSerializer());
+    return module;
   }
 
   public static class DateTimeSerializer extends StdSerializer<DateTime> {
@@ -32,8 +26,7 @@ public class JacksonCustomizations {
     }
 
     @Override
-    public void serialize(DateTime value, JsonGenerator gen, SerializerProvider provider)
-        throws IOException {
+    public void serialize(DateTime value, JsonGenerator gen, SerializationContext ctxt) {
       if (value == null) {
         gen.writeNull();
       } else {
