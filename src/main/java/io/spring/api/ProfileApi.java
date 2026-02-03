@@ -43,7 +43,11 @@ public class ProfileApi {
             target -> {
               FollowRelation followRelation = new FollowRelation(user.getId(), target.getId());
               userRepository.saveRelation(followRelation);
-              return profileResponse(profileQueryService.findByUsername(username, user).get());
+              ProfileData profile =
+                  profileQueryService
+                      .findByUsername(username, user)
+                      .orElseThrow(ResourceNotFoundException::new);
+              return profileResponse(profile);
             })
         .orElseThrow(ResourceNotFoundException::new);
   }
@@ -59,7 +63,11 @@ public class ProfileApi {
           .map(
               relation -> {
                 userRepository.removeRelation(relation);
-                return profileResponse(profileQueryService.findByUsername(username, user).get());
+                ProfileData profile =
+                    profileQueryService
+                        .findByUsername(username, user)
+                        .orElseThrow(ResourceNotFoundException::new);
+                return profileResponse(profile);
               })
           .orElseThrow(ResourceNotFoundException::new);
     } else {

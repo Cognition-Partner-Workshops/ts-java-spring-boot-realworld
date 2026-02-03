@@ -39,7 +39,10 @@ public class UsersApi {
   @RequestMapping(path = "/users", method = POST)
   public ResponseEntity createUser(@Valid @RequestBody RegisterParam registerParam) {
     User user = userService.createUser(registerParam);
-    UserData userData = userQueryService.findById(user.getId()).get();
+    UserData userData =
+        userQueryService
+            .findById(user.getId())
+            .orElseThrow(InvalidAuthenticationException::new);
     return ResponseEntity.status(201)
         .body(userResponse(new UserWithToken(userData, jwtService.toToken(user))));
   }
@@ -49,7 +52,10 @@ public class UsersApi {
     Optional<User> optional = userRepository.findByEmail(loginParam.getEmail());
     if (optional.isPresent()
         && passwordEncoder.matches(loginParam.getPassword(), optional.get().getPassword())) {
-      UserData userData = userQueryService.findById(optional.get().getId()).get();
+      UserData userData =
+          userQueryService
+              .findById(optional.get().getId())
+              .orElseThrow(InvalidAuthenticationException::new);
       return ResponseEntity.ok(
           userResponse(new UserWithToken(userData, jwtService.toToken(optional.get()))));
     } else {

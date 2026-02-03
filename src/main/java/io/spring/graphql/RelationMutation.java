@@ -54,7 +54,10 @@ public class RelationMutation {
   }
 
   private Profile buildProfile(@InputArgument("username") String username, User current) {
-    ProfileData profileData = profileQueryService.findByUsername(username, current).get();
+    ProfileData profileData =
+        profileQueryService
+            .findByUsername(username, current)
+            .orElseThrow(ResourceNotFoundException::new);
     return Profile.newBuilder()
         .username(profileData.getUsername())
         .bio(profileData.getBio())
