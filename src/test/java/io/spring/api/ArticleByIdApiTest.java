@@ -58,7 +58,7 @@ public class ArticleByIdApiTest extends TestWithCurrentUser {
         .thenReturn(Optional.of(articleData));
 
     RestAssuredMockMvc.when()
-        .get("/articles/{id}", article.getId())
+        .get("/articles/id/{id}", article.getId())
         .then()
         .statusCode(200)
         .body("article.id", equalTo(article.getId()))
@@ -85,7 +85,7 @@ public class ArticleByIdApiTest extends TestWithCurrentUser {
     given()
         .header("Authorization", "Token " + token)
         .when()
-        .get("/articles/{id}", article.getId())
+        .get("/articles/id/{id}", article.getId())
         .then()
         .statusCode(200)
         .body("article.id", equalTo(article.getId()))
@@ -96,7 +96,7 @@ public class ArticleByIdApiTest extends TestWithCurrentUser {
   public void should_404_if_article_not_found_by_id() throws Exception {
     when(articleQueryService.findById(anyString(), any())).thenReturn(Optional.empty());
     RestAssuredMockMvc.when()
-        .get("/articles/{id}", "non-existent-id")
+        .get("/articles/id/{id}", "non-existent-id")
         .then()
         .statusCode(404);
   }

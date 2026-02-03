@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ArticleByIdApi {
   private ArticleQueryService articleQueryService;
 
-  @GetMapping("/{id}")
+  @GetMapping("/id/{id}")
   public ResponseEntity<?> getArticleById(
       @PathVariable("id") String id, @AuthenticationPrincipal User user) {
     return articleQueryService
