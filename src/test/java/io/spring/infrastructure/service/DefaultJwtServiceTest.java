@@ -13,8 +13,9 @@ public class DefaultJwtServiceTest {
 
   @BeforeEach
   public void setUp() {
+    // HS512 requires a minimum key length of 512 bits (64 bytes)
     jwtService =
-        new DefaultJwtService("123123123123123123123123123123123123123123123123123123123123", 3600);
+        new DefaultJwtService("1231231231231231231231231231231231231231231231231231231231231234", 3600);
   }
 
   @Test
