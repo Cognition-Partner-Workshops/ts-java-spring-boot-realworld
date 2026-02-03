@@ -12,6 +12,7 @@ import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import io.spring.JacksonCustomizations;
 import io.spring.api.security.WebSecurityConfig;
 import io.spring.application.ArticleQueryService;
+import io.spring.application.Page;
 import io.spring.application.article.ArticleCommandService;
 import io.spring.application.data.ArticleData;
 import io.spring.application.data.ProfileData;
@@ -151,6 +152,209 @@ public class ArticlesApiTest extends TestWithCurrentUser {
         .prettyPeek()
         .then()
         .statusCode(422);
+  }
+
+  @Test
+  public void should_get_422_with_missing_title() throws Exception {
+    String description = "Ever wonder how?";
+    String body = "You have to believe";
+    List<String> tagList = asList("reactjs", "angularjs");
+    Map<String, Object> param = prepareParam("", description, body, tagList);
+
+    given()
+        .contentType("application/json")
+        .header("Authorization", "Token " + token)
+        .body(param)
+        .when()
+        .post("/articles")
+        .then()
+        .statusCode(422)
+        .body("errors.title[0]", equalTo("can't be empty"));
+  }
+
+  @Test
+  public void should_get_422_with_missing_description() throws Exception {
+    String title = "How to train your dragon";
+    String body = "You have to believe";
+    List<String> tagList = asList("reactjs", "angularjs");
+    Map<String, Object> param = prepareParam(title, "", body, tagList);
+
+    given()
+        .contentType("application/json")
+        .header("Authorization", "Token " + token)
+        .body(param)
+        .when()
+        .post("/articles")
+        .then()
+        .statusCode(422)
+        .body("errors.description[0]", equalTo("can't be empty"));
+  }
+
+  @Test
+  public void should_get_401_without_authentication() throws Exception {
+    String title = "How to train your dragon";
+    String description = "Ever wonder how?";
+    String body = "You have to believe";
+    List<String> tagList = asList("reactjs", "angularjs");
+    Map<String, Object> param = prepareParam(title, description, body, tagList);
+
+    given()
+        .contentType("application/json")
+        .body(param)
+        .when()
+        .post("/articles")
+        .then()
+        .statusCode(401);
+  }
+
+  @Test
+  public void should_get_articles_with_tag_filter() throws Exception {
+    ArticleData articleData =
+        new ArticleData(
+            "123",
+            "test-slug",
+            "Test Title",
+            "Test Description",
+            "Test Body",
+            false,
+            0,
+            new DateTime(),
+            new DateTime(),
+            asList("java", "spring"),
+            new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
+
+    when(articleQueryService.findRecentArticles(
+            eq("java"), eq(null), eq(null), any(Page.class), eq(null)))
+        .thenReturn(new io.spring.application.data.ArticleDataList(asList(articleData), 1));
+
+    given()
+        .contentType("application/json")
+        .when()
+        .get("/articles?tag=java")
+        .then()
+        .statusCode(200);
+  }
+
+  @Test
+  public void should_get_articles_with_author_filter() throws Exception {
+    ArticleData articleData =
+        new ArticleData(
+            "123",
+            "test-slug",
+            "Test Title",
+            "Test Description",
+            "Test Body",
+            false,
+            0,
+            new DateTime(),
+            new DateTime(),
+            asList("java"),
+            new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
+
+    when(articleQueryService.findRecentArticles(
+            eq(null), eq("testauthor"), eq(null), any(Page.class), eq(null)))
+        .thenReturn(new io.spring.application.data.ArticleDataList(asList(articleData), 1));
+
+    given()
+        .contentType("application/json")
+        .when()
+        .get("/articles?author=testauthor")
+        .then()
+        .statusCode(200);
+  }
+
+  @Test
+  public void should_get_articles_with_favorited_filter() throws Exception {
+    ArticleData articleData =
+        new ArticleData(
+            "123",
+            "test-slug",
+            "Test Title",
+            "Test Description",
+            "Test Body",
+            true,
+            5,
+            new DateTime(),
+            new DateTime(),
+            asList("java"),
+            new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
+
+    when(articleQueryService.findRecentArticles(
+            eq(null), eq(null), eq("favoriteuser"), any(Page.class), eq(null)))
+        .thenReturn(new io.spring.application.data.ArticleDataList(asList(articleData), 1));
+
+    given()
+        .contentType("application/json")
+        .when()
+        .get("/articles?favorited=favoriteuser")
+        .then()
+        .statusCode(200);
+  }
+
+  @Test
+  public void should_get_articles_with_pagination() throws Exception {
+    ArticleData articleData =
+        new ArticleData(
+            "123",
+            "test-slug",
+            "Test Title",
+            "Test Description",
+            "Test Body",
+            false,
+            0,
+            new DateTime(),
+            new DateTime(),
+            asList("java"),
+            new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
+
+    when(articleQueryService.findRecentArticles(
+            eq(null), eq(null), eq(null), eq(new Page(10, 5)), eq(null)))
+        .thenReturn(new io.spring.application.data.ArticleDataList(asList(articleData), 1));
+
+    given()
+        .contentType("application/json")
+        .when()
+        .get("/articles?offset=10&limit=5")
+        .then()
+        .statusCode(200);
+  }
+
+  @Test
+  public void should_get_user_feed_with_authentication() throws Exception {
+    ArticleData articleData =
+        new ArticleData(
+            "123",
+            "test-slug",
+            "Test Title",
+            "Test Description",
+            "Test Body",
+            false,
+            0,
+            new DateTime(),
+            new DateTime(),
+            asList("java"),
+            new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
+
+    when(articleQueryService.findUserFeed(eq(user), any(Page.class)))
+        .thenReturn(new io.spring.application.data.ArticleDataList(asList(articleData), 1));
+
+    given()
+        .contentType("application/json")
+        .header("Authorization", "Token " + token)
+        .when()
+        .get("/articles/feed")
+        .then()
+        .statusCode(200);
+  }
+
+  @Test
+  public void should_get_401_for_feed_without_authentication() throws Exception {
+    given()
+        .contentType("application/json")
+        .when()
+        .get("/articles/feed")
+        .then()
+        .statusCode(401);
   }
 
   private HashMap<String, Object> prepareParam(

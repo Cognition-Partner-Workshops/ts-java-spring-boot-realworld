@@ -162,4 +162,151 @@ public class CommentsApiTest extends TestWithCurrentUser {
         .then()
         .statusCode(403);
   }
+
+  @Test
+  public void should_get_401_when_creating_comment_without_authentication() throws Exception {
+    Map<String, Object> param =
+        new HashMap<String, Object>() {
+          {
+            put(
+                "comment",
+                new HashMap<String, Object>() {
+                  {
+                    put("body", "comment content");
+                  }
+                });
+          }
+        };
+
+    given()
+        .contentType("application/json")
+        .body(param)
+        .when()
+        .post("/articles/{slug}/comments", article.getSlug())
+        .then()
+        .statusCode(401);
+  }
+
+  @Test
+  public void should_get_404_when_creating_comment_on_nonexistent_article() throws Exception {
+    when(articleRepository.findBySlug(eq("nonexistent-slug"))).thenReturn(Optional.empty());
+
+    Map<String, Object> param =
+        new HashMap<String, Object>() {
+          {
+            put(
+                "comment",
+                new HashMap<String, Object>() {
+                  {
+                    put("body", "comment content");
+                  }
+                });
+          }
+        };
+
+    given()
+        .contentType("application/json")
+        .header("Authorization", "Token " + token)
+        .body(param)
+        .when()
+        .post("/articles/{slug}/comments", "nonexistent-slug")
+        .then()
+        .statusCode(404);
+  }
+
+  @Test
+  public void should_get_404_when_getting_comments_on_nonexistent_article() throws Exception {
+    when(articleRepository.findBySlug(eq("nonexistent-slug"))).thenReturn(Optional.empty());
+
+    RestAssuredMockMvc.when()
+        .get("/articles/{slug}/comments", "nonexistent-slug")
+        .then()
+        .statusCode(404);
+  }
+
+  @Test
+  public void should_get_404_when_deleting_nonexistent_comment() throws Exception {
+    when(commentRepository.findById(eq(article.getId()), eq("nonexistent-comment-id")))
+        .thenReturn(Optional.empty());
+
+    given()
+        .header("Authorization", "Token " + token)
+        .when()
+        .delete("/articles/{slug}/comments/{id}", article.getSlug(), "nonexistent-comment-id")
+        .then()
+        .statusCode(404);
+  }
+
+  @Test
+  public void should_get_401_when_deleting_comment_without_authentication() throws Exception {
+    given()
+        .when()
+        .delete("/articles/{slug}/comments/{id}", article.getSlug(), comment.getId())
+        .then()
+        .statusCode(401);
+  }
+
+  @Test
+  public void should_get_comments_with_authenticated_user() throws Exception {
+    when(commentQueryService.findByArticleId(anyString(), eq(user)))
+        .thenReturn(Arrays.asList(commentData));
+
+    given()
+        .header("Authorization", "Token " + token)
+        .when()
+        .get("/articles/{slug}/comments", article.getSlug())
+        .then()
+        .statusCode(200)
+        .body("comments[0].id", equalTo(commentData.getId()));
+  }
+
+  @Test
+  public void should_get_422_with_null_body() throws Exception {
+    Map<String, Object> param =
+        new HashMap<String, Object>() {
+          {
+            put(
+                "comment",
+                new HashMap<String, Object>() {
+                  {
+                    put("body", null);
+                  }
+                });
+          }
+        };
+
+    given()
+        .contentType("application/json")
+        .header("Authorization", "Token " + token)
+        .body(param)
+        .when()
+        .post("/articles/{slug}/comments", article.getSlug())
+        .then()
+        .statusCode(422);
+  }
+
+  @Test
+  public void should_delete_comment_as_article_author() throws Exception {
+    User articleAuthor = new User("author@example.com", "articleauthor", "123", "", "");
+    Article authorArticle =
+        new Article("author title", "desc", "body", Arrays.asList("test"), articleAuthor.getId());
+    Comment otherUserComment = new Comment("other comment", user.getId(), authorArticle.getId());
+
+    when(articleRepository.findBySlug(eq(authorArticle.getSlug())))
+        .thenReturn(Optional.of(authorArticle));
+    when(commentRepository.findById(eq(authorArticle.getId()), eq(otherUserComment.getId())))
+        .thenReturn(Optional.of(otherUserComment));
+    when(userRepository.findById(eq(articleAuthor.getId())))
+        .thenReturn(Optional.of(articleAuthor));
+    when(jwtService.getSubFromToken(eq("authortoken")))
+        .thenReturn(Optional.of(articleAuthor.getId()));
+
+    given()
+        .header("Authorization", "Token " + "authortoken")
+        .when()
+        .delete(
+            "/articles/{slug}/comments/{id}", authorArticle.getSlug(), otherUserComment.getId())
+        .then()
+        .statusCode(204);
+  }
 }
