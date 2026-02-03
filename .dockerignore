@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Build outputs
+build/
+!build/libs/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.windsurf/
+
+# Gradle
+.gradle/
+
+# Database files
+*.db
+
+# Frontend (separate containerization if needed)
+frontend/
+
+# Documentation
+*.md
+*.png
+LICENSE
+
+# Test resources
+src/test/
