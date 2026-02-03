@@ -21,6 +21,8 @@ import javax.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @AllArgsConstructor
 public class UsersApi {
+  private static final Logger log = LoggerFactory.getLogger(UsersApi.class);
   private UserRepository userRepository;
   private UserQueryService userQueryService;
   private PasswordEncoder passwordEncoder;
@@ -38,7 +41,9 @@ public class UsersApi {
 
   @RequestMapping(path = "/users", method = POST)
   public ResponseEntity createUser(@Valid @RequestBody RegisterParam registerParam) {
+    log.info("User registration request received for email: {}", registerParam.getEmail());
     User user = userService.createUser(registerParam);
+    log.info("User created successfully with id: {} and username: {}", user.getId(), user.getUsername());
     UserData userData = userQueryService.findById(user.getId()).get();
     return ResponseEntity.status(201)
         .body(userResponse(new UserWithToken(userData, jwtService.toToken(user))));
@@ -46,13 +51,16 @@ public class UsersApi {
 
   @RequestMapping(path = "/users/login", method = POST)
   public ResponseEntity userLogin(@Valid @RequestBody LoginParam loginParam) {
+    log.info("Login attempt for email: {}", loginParam.getEmail());
     Optional<User> optional = userRepository.findByEmail(loginParam.getEmail());
     if (optional.isPresent()
         && passwordEncoder.matches(loginParam.getPassword(), optional.get().getPassword())) {
+      log.info("Login successful for user: {}", optional.get().getUsername());
       UserData userData = userQueryService.findById(optional.get().getId()).get();
       return ResponseEntity.ok(
           userResponse(new UserWithToken(userData, jwtService.toToken(optional.get()))));
     } else {
+      log.warn("Login failed for email: {} - invalid credentials", loginParam.getEmail());
       throw new InvalidAuthenticationException();
     }
   }

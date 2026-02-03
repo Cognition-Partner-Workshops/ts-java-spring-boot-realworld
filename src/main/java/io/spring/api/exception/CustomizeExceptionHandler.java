@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,9 +25,11 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @RestControllerAdvice
 public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
+  private static final Logger log = LoggerFactory.getLogger(CustomizeExceptionHandler.class);
 
   @ExceptionHandler({InvalidRequestException.class})
   public ResponseEntity<Object> handleInvalidRequest(RuntimeException e, WebRequest request) {
+    log.warn("Invalid request exception: {}", e.getMessage());
     InvalidRequestException ire = (InvalidRequestException) e;
 
     List<FieldErrorResource> errorResources =
@@ -50,6 +54,7 @@ public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(InvalidAuthenticationException.class)
   public ResponseEntity<Object> handleInvalidAuthentication(
       InvalidAuthenticationException e, WebRequest request) {
+    log.warn("Invalid authentication exception: {}", e.getMessage());
     return ResponseEntity.status(UNPROCESSABLE_ENTITY)
         .body(
             new HashMap<String, Object>() {
@@ -65,6 +70,7 @@ public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
       HttpHeaders headers,
       HttpStatus status,
       WebRequest request) {
+    log.warn("Method argument not valid: {}", e.getMessage());
     List<FieldErrorResource> errorResources =
         e.getBindingResult().getFieldErrors().stream()
             .map(
@@ -84,6 +90,7 @@ public class CustomizeExceptionHandler extends ResponseEntityExceptionHandler {
   @ResponseBody
   public ErrorResource handleConstraintViolation(
       ConstraintViolationException ex, WebRequest request) {
+    log.warn("Constraint violation exception: {}", ex.getMessage());
     List<FieldErrorResource> errors = new ArrayList<>();
     for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
       FieldErrorResource fieldErrorResource =

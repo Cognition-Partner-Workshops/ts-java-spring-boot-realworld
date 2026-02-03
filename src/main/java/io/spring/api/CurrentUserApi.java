@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/user")
 @AllArgsConstructor
 public class CurrentUserApi {
+  private static final Logger log = LoggerFactory.getLogger(CurrentUserApi.class);
 
   private UserQueryService userQueryService;
   private UserService userService;
@@ -32,6 +35,7 @@ public class CurrentUserApi {
   public ResponseEntity currentUser(
       @AuthenticationPrincipal User currentUser,
       @RequestHeader(value = "Authorization") String authorization) {
+    log.debug("Fetching current user profile for: {}", currentUser.getUsername());
     UserData userData = userQueryService.findById(currentUser.getId()).get();
     return ResponseEntity.ok(
         userResponse(new UserWithToken(userData, authorization.split(" ")[1])));
@@ -42,8 +46,9 @@ public class CurrentUserApi {
       @AuthenticationPrincipal User currentUser,
       @RequestHeader("Authorization") String token,
       @Valid @RequestBody UpdateUserParam updateUserParam) {
-
+    log.info("Updating profile for user: {}", currentUser.getUsername());
     userService.updateUser(new UpdateUserCommand(currentUser, updateUserParam));
+    log.info("Profile updated successfully for user: {}", currentUser.getUsername());
     UserData userData = userQueryService.findById(currentUser.getId()).get();
     return ResponseEntity.ok(userResponse(new UserWithToken(userData, token.split(" ")[1])));
   }

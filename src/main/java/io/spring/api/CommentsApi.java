@@ -19,6 +19,8 @@ import javax.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/articles/{slug}/comments")
 @AllArgsConstructor
 public class CommentsApi {
+  private static final Logger log = LoggerFactory.getLogger(CommentsApi.class);
   private ArticleRepository articleRepository;
   private CommentRepository commentRepository;
   private CommentQueryService commentQueryService;
@@ -42,10 +45,15 @@ public class CommentsApi {
       @PathVariable("slug") String slug,
       @AuthenticationPrincipal User user,
       @Valid @RequestBody NewCommentParam newCommentParam) {
+    log.info("Creating comment on article: {} by user: {}", slug, user.getUsername());
     Article article =
-        articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
+        articleRepository.findBySlug(slug).orElseThrow(() -> {
+          log.warn("Article not found for comment creation with slug: {}", slug);
+          return new ResourceNotFoundException();
+        });
     Comment comment = new Comment(newCommentParam.getBody(), user.getId(), article.getId());
     commentRepository.save(comment);
+    log.info("Comment created successfully with id: {}", comment.getId());
     return ResponseEntity.status(201)
         .body(commentResponse(commentQueryService.findById(comment.getId(), user).get()));
   }
@@ -53,9 +61,14 @@ public class CommentsApi {
   @GetMapping
   public ResponseEntity getComments(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.debug("Fetching comments for article: {}", slug);
     Article article =
-        articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
+        articleRepository.findBySlug(slug).orElseThrow(() -> {
+          log.warn("Article not found for fetching comments with slug: {}", slug);
+          return new ResourceNotFoundException();
+        });
     List<CommentData> comments = commentQueryService.findByArticleId(article.getId(), user);
+    log.debug("Found {} comments for article: {}", comments.size(), slug);
     return ResponseEntity.ok(
         new HashMap<String, Object>() {
           {
@@ -69,19 +82,28 @@ public class CommentsApi {
       @PathVariable("slug") String slug,
       @PathVariable("id") String commentId,
       @AuthenticationPrincipal User user) {
+    log.info("Deleting comment: {} from article: {} by user: {}", commentId, slug, user.getUsername());
     Article article =
-        articleRepository.findBySlug(slug).orElseThrow(ResourceNotFoundException::new);
+        articleRepository.findBySlug(slug).orElseThrow(() -> {
+          log.warn("Article not found for comment deletion with slug: {}", slug);
+          return new ResourceNotFoundException();
+        });
     return commentRepository
         .findById(article.getId(), commentId)
         .map(
             comment -> {
               if (!AuthorizationService.canWriteComment(user, article, comment)) {
+                log.warn("User {} not authorized to delete comment: {}", user.getUsername(), commentId);
                 throw new NoAuthorizationException();
               }
               commentRepository.remove(comment);
+              log.info("Comment deleted successfully: {}", commentId);
               return ResponseEntity.noContent().build();
             })
-        .orElseThrow(ResourceNotFoundException::new);
+        .orElseThrow(() -> {
+          log.warn("Comment not found: {} for article: {}", commentId, slug);
+          return new ResourceNotFoundException();
+        });
   }
 
   private Map<String, Object> commentResponse(CommentData commentData) {

@@ -18,18 +18,23 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
 public class ArticleQueryService {
+  private static final Logger log = LoggerFactory.getLogger(ArticleQueryService.class);
   private ArticleReadService articleReadService;
   private UserRelationshipQueryService userRelationshipQueryService;
   private ArticleFavoritesReadService articleFavoritesReadService;
 
   public Optional<ArticleData> findById(String id, User user) {
+    log.debug("Finding article by id: {}", id);
     ArticleData articleData = articleReadService.findById(id);
     if (articleData == null) {
+      log.debug("Article not found with id: {}", id);
       return Optional.empty();
     } else {
       if (user != null) {
@@ -40,8 +45,10 @@ public class ArticleQueryService {
   }
 
   public Optional<ArticleData> findBySlug(String slug, User user) {
+    log.debug("Finding article by slug: {}", slug);
     ArticleData articleData = articleReadService.findBySlug(slug);
     if (articleData == null) {
+      log.debug("Article not found with slug: {}", slug);
       return Optional.empty();
     } else {
       if (user != null) {
@@ -99,13 +106,17 @@ public class ArticleQueryService {
 
   public ArticleDataList findRecentArticles(
       String tag, String author, String favoritedBy, Page page, User currentUser) {
+    log.debug("Finding recent articles - tag: {}, author: {}, favoritedBy: {}, offset: {}, limit: {}",
+        tag, author, favoritedBy, page.getOffset(), page.getLimit());
     List<String> articleIds = articleReadService.queryArticles(tag, author, favoritedBy, page);
     int articleCount = articleReadService.countArticle(tag, author, favoritedBy);
     if (articleIds.size() == 0) {
+      log.debug("No articles found matching criteria");
       return new ArticleDataList(new ArrayList<>(), articleCount);
     } else {
       List<ArticleData> articles = articleReadService.findArticles(articleIds);
       fillExtraInfo(articles, currentUser);
+      log.debug("Found {} articles out of {} total", articles.size(), articleCount);
       return new ArticleDataList(articles, articleCount);
     }
   }

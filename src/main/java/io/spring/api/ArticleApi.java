@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/articles/{slug}")
 @AllArgsConstructor
 public class ArticleApi {
+  private static final Logger log = LoggerFactory.getLogger(ArticleApi.class);
   private ArticleQueryService articleQueryService;
   private ArticleRepository articleRepository;
   private ArticleCommandService articleCommandService;
@@ -35,10 +38,17 @@ public class ArticleApi {
   @GetMapping
   public ResponseEntity<?> article(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.debug("Fetching article with slug: {}", slug);
     return articleQueryService
         .findBySlug(slug, user)
-        .map(articleData -> ResponseEntity.ok(articleResponse(articleData)))
-        .orElseThrow(ResourceNotFoundException::new);
+        .map(articleData -> {
+          log.debug("Article found: {}", articleData.getTitle());
+          return ResponseEntity.ok(articleResponse(articleData));
+        })
+        .orElseThrow(() -> {
+          log.warn("Article not found with slug: {}", slug);
+          return new ResourceNotFoundException();
+        });
   }
 
   @PutMapping
@@ -46,36 +56,48 @@ public class ArticleApi {
       @PathVariable("slug") String slug,
       @AuthenticationPrincipal User user,
       @Valid @RequestBody UpdateArticleParam updateArticleParam) {
+    log.info("Updating article with slug: {} by user: {}", slug, user.getUsername());
     return articleRepository
         .findBySlug(slug)
         .map(
             article -> {
               if (!AuthorizationService.canWriteArticle(user, article)) {
+                log.warn("User {} not authorized to update article: {}", user.getUsername(), slug);
                 throw new NoAuthorizationException();
               }
               Article updatedArticle =
                   articleCommandService.updateArticle(article, updateArticleParam);
+              log.info("Article updated successfully: {}", updatedArticle.getSlug());
               return ResponseEntity.ok(
                   articleResponse(
                       articleQueryService.findBySlug(updatedArticle.getSlug(), user).get()));
             })
-        .orElseThrow(ResourceNotFoundException::new);
+        .orElseThrow(() -> {
+          log.warn("Article not found for update with slug: {}", slug);
+          return new ResourceNotFoundException();
+        });
   }
 
   @DeleteMapping
   public ResponseEntity deleteArticle(
       @PathVariable("slug") String slug, @AuthenticationPrincipal User user) {
+    log.info("Deleting article with slug: {} by user: {}", slug, user.getUsername());
     return articleRepository
         .findBySlug(slug)
         .map(
             article -> {
               if (!AuthorizationService.canWriteArticle(user, article)) {
+                log.warn("User {} not authorized to delete article: {}", user.getUsername(), slug);
                 throw new NoAuthorizationException();
               }
               articleRepository.remove(article);
+              log.info("Article deleted successfully: {}", slug);
               return ResponseEntity.noContent().build();
             })
-        .orElseThrow(ResourceNotFoundException::new);
+        .orElseThrow(() -> {
+          log.warn("Article not found for deletion with slug: {}", slug);
+          return new ResourceNotFoundException();
+        });
   }
 
   private Map<String, Object> articleResponse(ArticleData articleData) {
