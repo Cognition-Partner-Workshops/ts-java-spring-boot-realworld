@@ -8,15 +8,38 @@ This codebase was created to demonstrate a fully fledged full-stack application 
 
 For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.
 
-# *NEW* GraphQL Support  
+# GraphQL API
 
-Following some DDD principles. REST or GraphQL is just a kind of adapter. And the domain layer will be consistent all the time. So this repository implement GraphQL and REST at the same time.
-
-The GraphQL schema is https://github.com/gothinkster/spring-boot-realworld-example-app/blob/master/src/main/resources/schema/schema.graphqls and the visualization looks like below.
+This application provides a GraphQL-only API using the [Netflix DGS framework](https://github.com/Netflix/dgs-framework). The GraphQL schema is located at `src/main/resources/schema/schema.graphqls` and the visualization looks like below.
 
 ![](graphql-schema.png)
 
-And this implementation is using [dgs-framework](https://github.com/Netflix/dgs-framework) which is a quite new java graphql server framework.
+## GraphQL Endpoints
+
+The GraphQL API is available at `/graphql` with an interactive GraphiQL interface at `/graphiql`.
+
+### Queries
+- `me` - Get current authenticated user
+- `article(slug)` - Get article by slug
+- `articles(first, after, last, before, tag, authoredBy, favoritedBy)` - List articles with cursor-based pagination
+- `feed(first, after, last, before)` - Get feed of articles from followed users
+- `profile(username)` - Get user profile
+- `tags` - Get all tags
+
+### Mutations
+- `createUser(input)` - Register a new user
+- `login(email, password)` - Authenticate and get JWT token
+- `updateUser(input)` - Update current user profile
+- `createArticle(input)` - Create a new article
+- `updateArticle(slug, input)` - Update an article
+- `deleteArticle(slug)` - Delete an article
+- `addComment(slug, body)` - Add comment to article
+- `deleteComment(slug, id)` - Delete a comment
+- `favoriteArticle(slug)` - Favorite an article
+- `unfavoriteArticle(slug)` - Unfavorite an article
+- `followUser(username)` - Follow a user
+- `unfollowUser(username)` - Unfollow a user
+
 # How it works
 
 The application uses Spring Boot (Web, Mybatis).
@@ -27,7 +50,7 @@ The application uses Spring Boot (Web, Mybatis).
 
 And the code is organized as this:
 
-1. `api` is the web layer implemented by Spring MVC
+1. `graphql` is the GraphQL layer implemented with Netflix DGS framework
 2. `core` is the business model including entities and services
 3. `application` is the high-level services for querying the data transfer objects
 4. `infrastructure`  contains all the implementation classes as the technique details
@@ -70,10 +93,12 @@ You'll need Java 11 installed.
 
 **Note**: `bootRun` automatically cleans and recreates the database with seed data on each run to avoid Flyway migration conflicts during development.
 
-To test that it works, open a browser tab at http://localhost:8080/tags .  
-Alternatively, you can run
+To test that it works, open a browser tab at http://localhost:8080/graphiql to access the GraphQL playground.
+Alternatively, you can run a GraphQL query:
 
-    curl http://localhost:8080/tags
+    curl -X POST http://localhost:8080/graphql \
+      -H "Content-Type: application/json" \
+      -d '{"query": "{ tags }"}'
 
 ## Frontend (Next.js)
 
@@ -104,7 +129,7 @@ You'll need Docker installed.
 
 # Try it out with a RealWorld frontend
 
-The entry point address of the backend API is at http://localhost:8080, **not** http://localhost:8080/api as some of the frontend documentation suggests.
+The GraphQL API endpoint is at http://localhost:8080/graphql with an interactive GraphiQL interface at http://localhost:8080/graphiql.
 
 # Run test
 
