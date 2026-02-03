@@ -16,6 +16,7 @@ import io.spring.application.ArticleQueryService;
 import io.spring.application.article.ArticleCommandService;
 import io.spring.application.data.ArticleData;
 import io.spring.application.data.ProfileData;
+import io.spring.application.facade.ArticleApiFacade;
 import io.spring.core.article.Article;
 import io.spring.core.article.ArticleRepository;
 import io.spring.core.user.User;
@@ -38,6 +39,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({WebSecurityConfig.class, JacksonCustomizations.class})
 public class ArticleApiTest extends TestWithCurrentUser {
   @Autowired private MockMvc mvc;
+
+  @MockBean private ArticleApiFacade articleApiFacade;
 
   @MockBean private ArticleQueryService articleQueryService;
 
@@ -66,7 +69,7 @@ public class ArticleApiTest extends TestWithCurrentUser {
             time);
     ArticleData articleData = TestHelper.getArticleDataFromArticleAndUser(article, user);
 
-    when(articleQueryService.findBySlug(eq(slug), eq(null))).thenReturn(Optional.of(articleData));
+    when(articleApiFacade.getArticleBySlug(eq(slug), eq(null))).thenReturn(articleData);
 
     RestAssuredMockMvc.when()
         .get("/articles/{slug}", slug)
@@ -79,7 +82,8 @@ public class ArticleApiTest extends TestWithCurrentUser {
 
   @Test
   public void should_404_if_article_not_found() throws Exception {
-    when(articleQueryService.findBySlug(anyString(), any())).thenReturn(Optional.empty());
+    when(articleApiFacade.getArticleBySlug(anyString(), any()))
+        .thenThrow(new io.spring.api.exception.ResourceNotFoundException());
     RestAssuredMockMvc.when().get("/articles/not-exists").then().statusCode(404);
   }
 
@@ -100,12 +104,8 @@ public class ArticleApiTest extends TestWithCurrentUser {
     ArticleData updatedArticleData =
         TestHelper.getArticleDataFromArticleAndUser(updatedArticle, user);
 
-    when(articleRepository.findBySlug(eq(originalArticle.getSlug())))
-        .thenReturn(Optional.of(originalArticle));
-    when(articleCommandService.updateArticle(eq(originalArticle), any()))
-        .thenReturn(updatedArticle);
-    when(articleQueryService.findBySlug(eq(updatedArticle.getSlug()), eq(user)))
-        .thenReturn(Optional.of(updatedArticleData));
+    when(articleApiFacade.updateArticle(eq(originalArticle.getSlug()), any(), any(), any(), eq(user)))
+        .thenReturn(updatedArticleData);
 
     given()
         .contentType("application/json")
@@ -131,29 +131,8 @@ public class ArticleApiTest extends TestWithCurrentUser {
         new Article(
             title, description, body, Arrays.asList("java", "spring", "jpg"), anotherUser.getId());
 
-    DateTime time = new DateTime();
-    ArticleData articleData =
-        new ArticleData(
-            article.getId(),
-            article.getSlug(),
-            article.getTitle(),
-            article.getDescription(),
-            article.getBody(),
-            false,
-            0,
-            time,
-            time,
-            Arrays.asList("joda"),
-            new ProfileData(
-                anotherUser.getId(),
-                anotherUser.getUsername(),
-                anotherUser.getBio(),
-                anotherUser.getImage(),
-                false));
-
-    when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
-    when(articleQueryService.findBySlug(eq(article.getSlug()), eq(user)))
-        .thenReturn(Optional.of(articleData));
+    when(articleApiFacade.updateArticle(eq(article.getSlug()), any(), any(), any(), eq(user)))
+        .thenThrow(new io.spring.api.exception.NoAuthorizationException());
 
     given()
         .contentType("application/json")
@@ -173,7 +152,6 @@ public class ArticleApiTest extends TestWithCurrentUser {
 
     Article article =
         new Article(title, description, body, Arrays.asList("java", "spring", "jpg"), user.getId());
-    when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
 
     given()
         .header("Authorization", "Token " + token)
@@ -182,7 +160,7 @@ public class ArticleApiTest extends TestWithCurrentUser {
         .then()
         .statusCode(204);
 
-    verify(articleRepository).remove(eq(article));
+    verify(articleApiFacade).deleteArticle(eq(article.getSlug()), eq(user));
   }
 
   @Test
@@ -197,7 +175,9 @@ public class ArticleApiTest extends TestWithCurrentUser {
         new Article(
             title, description, body, Arrays.asList("java", "spring", "jpg"), anotherUser.getId());
 
-    when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
+    org.mockito.Mockito.doThrow(new io.spring.api.exception.NoAuthorizationException())
+        .when(articleApiFacade).deleteArticle(eq(article.getSlug()), eq(user));
+
     given()
         .header("Authorization", "Token " + token)
         .when()

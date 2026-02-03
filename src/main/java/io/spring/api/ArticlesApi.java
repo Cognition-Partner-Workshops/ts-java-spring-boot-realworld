@@ -1,10 +1,8 @@
 package io.spring.api;
 
-import io.spring.application.ArticleQueryService;
-import io.spring.application.Page;
-import io.spring.application.article.ArticleCommandService;
 import io.spring.application.article.NewArticleParam;
-import io.spring.core.article.Article;
+import io.spring.application.data.ArticleData;
+import io.spring.application.facade.ArticleApiFacade;
 import io.spring.core.user.User;
 import java.util.HashMap;
 import javax.validation.Valid;
@@ -22,17 +20,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/articles")
 @AllArgsConstructor
 public class ArticlesApi {
-  private ArticleCommandService articleCommandService;
-  private ArticleQueryService articleQueryService;
+  private ArticleApiFacade articleApiFacade;
 
   @PostMapping
   public ResponseEntity createArticle(
       @Valid @RequestBody NewArticleParam newArticleParam, @AuthenticationPrincipal User user) {
-    Article article = articleCommandService.createArticle(newArticleParam, user);
+    ArticleData articleData =
+        articleApiFacade.createArticle(
+            newArticleParam.getTitle(),
+            newArticleParam.getDescription(),
+            newArticleParam.getBody(),
+            newArticleParam.getTagList(),
+            user);
     return ResponseEntity.ok(
         new HashMap<String, Object>() {
           {
-            put("article", articleQueryService.findById(article.getId(), user).get());
+            put("article", articleData);
           }
         });
   }
@@ -42,7 +45,7 @@ public class ArticlesApi {
       @RequestParam(value = "offset", defaultValue = "0") int offset,
       @RequestParam(value = "limit", defaultValue = "20") int limit,
       @AuthenticationPrincipal User user) {
-    return ResponseEntity.ok(articleQueryService.findUserFeed(user, new Page(offset, limit)));
+    return ResponseEntity.ok(articleApiFacade.getUserFeed(user, offset, limit));
   }
 
   @GetMapping
@@ -54,7 +57,6 @@ public class ArticlesApi {
       @RequestParam(value = "author", required = false) String author,
       @AuthenticationPrincipal User user) {
     return ResponseEntity.ok(
-        articleQueryService.findRecentArticles(
-            tag, author, favoritedBy, new Page(offset, limit), user));
+        articleApiFacade.getRecentArticles(tag, author, favoritedBy, offset, limit, user));
   }
 }

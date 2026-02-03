@@ -11,6 +11,7 @@ import io.spring.JacksonCustomizations;
 import io.spring.api.security.WebSecurityConfig;
 import io.spring.application.ProfileQueryService;
 import io.spring.application.data.ProfileData;
+import io.spring.application.facade.ProfileApiFacade;
 import io.spring.core.user.FollowRelation;
 import io.spring.core.user.User;
 import java.util.Optional;
@@ -28,6 +29,8 @@ public class ProfileApiTest extends TestWithCurrentUser {
   private User anotherUser;
 
   @Autowired private MockMvc mvc;
+
+  @MockBean private ProfileApiFacade profileApiFacade;
 
   @MockBean private ProfileQueryService profileQueryService;
 
@@ -51,8 +54,8 @@ public class ProfileApiTest extends TestWithCurrentUser {
 
   @Test
   public void should_get_user_profile_success() throws Exception {
-    when(profileQueryService.findByUsername(eq(profileData.getUsername()), eq(null)))
-        .thenReturn(Optional.of(profileData));
+    when(profileApiFacade.getProfile(eq(profileData.getUsername()), eq(null)))
+        .thenReturn(profileData);
     RestAssuredMockMvc.when()
         .get("/profiles/{username}", profileData.getUsername())
         .prettyPeek()
@@ -63,8 +66,8 @@ public class ProfileApiTest extends TestWithCurrentUser {
 
   @Test
   public void should_follow_user_success() throws Exception {
-    when(profileQueryService.findByUsername(eq(profileData.getUsername()), eq(user)))
-        .thenReturn(Optional.of(profileData));
+    when(profileApiFacade.followUser(eq(anotherUser.getUsername()), eq(user)))
+        .thenReturn(profileData);
     given()
         .header("Authorization", "Token " + token)
         .when()
@@ -72,16 +75,13 @@ public class ProfileApiTest extends TestWithCurrentUser {
         .prettyPeek()
         .then()
         .statusCode(200);
-    verify(userRepository).saveRelation(new FollowRelation(user.getId(), anotherUser.getId()));
+    verify(profileApiFacade).followUser(eq(anotherUser.getUsername()), eq(user));
   }
 
   @Test
   public void should_unfollow_user_success() throws Exception {
-    FollowRelation followRelation = new FollowRelation(user.getId(), anotherUser.getId());
-    when(userRepository.findRelation(eq(user.getId()), eq(anotherUser.getId())))
-        .thenReturn(Optional.of(followRelation));
-    when(profileQueryService.findByUsername(eq(profileData.getUsername()), eq(user)))
-        .thenReturn(Optional.of(profileData));
+    when(profileApiFacade.unfollowUser(eq(anotherUser.getUsername()), eq(user)))
+        .thenReturn(profileData);
 
     given()
         .header("Authorization", "Token " + token)
@@ -91,6 +91,6 @@ public class ProfileApiTest extends TestWithCurrentUser {
         .then()
         .statusCode(200);
 
-    verify(userRepository).removeRelation(eq(followRelation));
+    verify(profileApiFacade).unfollowUser(eq(anotherUser.getUsername()), eq(user));
   }
 }

@@ -13,6 +13,7 @@ import io.spring.api.security.WebSecurityConfig;
 import io.spring.application.CommentQueryService;
 import io.spring.application.data.CommentData;
 import io.spring.application.data.ProfileData;
+import io.spring.application.facade.CommentApiFacade;
 import io.spring.core.article.Article;
 import io.spring.core.article.ArticleRepository;
 import io.spring.core.comment.Comment;
@@ -20,6 +21,7 @@ import io.spring.core.comment.CommentRepository;
 import io.spring.core.user.User;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +35,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(CommentsApi.class)
 @Import({WebSecurityConfig.class, JacksonCustomizations.class})
 public class CommentsApiTest extends TestWithCurrentUser {
+
+  @MockBean private CommentApiFacade commentApiFacade;
 
   @MockBean private ArticleRepository articleRepository;
 
@@ -77,7 +81,8 @@ public class CommentsApiTest extends TestWithCurrentUser {
           }
         };
 
-    when(commentQueryService.findById(anyString(), eq(user))).thenReturn(Optional.of(commentData));
+    when(commentApiFacade.createComment(eq(article.getSlug()), eq("comment content"), eq(user)))
+        .thenReturn(commentData);
 
     given()
         .contentType("application/json")
@@ -118,8 +123,9 @@ public class CommentsApiTest extends TestWithCurrentUser {
 
   @Test
   public void should_get_comments_of_article_success() throws Exception {
-    when(commentQueryService.findByArticleId(anyString(), eq(null)))
-        .thenReturn(Arrays.asList(commentData));
+    List<CommentData> comments = Arrays.asList(commentData);
+    when(commentApiFacade.getCommentsByArticleSlug(eq(article.getSlug()), eq(null)))
+        .thenReturn(comments);
     RestAssuredMockMvc.when()
         .get("/articles/{slug}/comments", article.getSlug())
         .prettyPeek()
@@ -130,9 +136,6 @@ public class CommentsApiTest extends TestWithCurrentUser {
 
   @Test
   public void should_delete_comment_success() throws Exception {
-    when(commentRepository.findById(eq(article.getId()), eq(comment.getId())))
-        .thenReturn(Optional.of(comment));
-
     given()
         .header("Authorization", "Token " + token)
         .when()
@@ -151,8 +154,9 @@ public class CommentsApiTest extends TestWithCurrentUser {
     when(userRepository.findById(eq(anotherUser.getId())))
         .thenReturn(Optional.ofNullable(anotherUser));
 
-    when(commentRepository.findById(eq(article.getId()), eq(comment.getId())))
-        .thenReturn(Optional.of(comment));
+    org.mockito.Mockito.doThrow(new io.spring.api.exception.NoAuthorizationException())
+        .when(commentApiFacade).deleteComment(eq(article.getSlug()), eq(comment.getId()), any());
+
     String token = jwtService.toToken(anotherUser);
     when(userRepository.findById(eq(anotherUser.getId()))).thenReturn(Optional.of(anotherUser));
     given()

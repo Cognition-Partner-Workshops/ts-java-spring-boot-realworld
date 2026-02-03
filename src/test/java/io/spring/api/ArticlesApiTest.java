@@ -15,6 +15,7 @@ import io.spring.application.ArticleQueryService;
 import io.spring.application.article.ArticleCommandService;
 import io.spring.application.data.ArticleData;
 import io.spring.application.data.ProfileData;
+import io.spring.application.facade.ArticleApiFacade;
 import io.spring.core.article.Article;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({WebSecurityConfig.class, JacksonCustomizations.class})
 public class ArticlesApiTest extends TestWithCurrentUser {
   @Autowired private MockMvc mvc;
+
+  @MockBean private ArticleApiFacade articleApiFacade;
 
   @MockBean private ArticleQueryService articleQueryService;
 
@@ -68,13 +71,8 @@ public class ArticlesApiTest extends TestWithCurrentUser {
             tagList,
             new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
 
-    when(articleCommandService.createArticle(any(), any()))
-        .thenReturn(new Article(title, description, body, tagList, user.getId()));
-
-    when(articleQueryService.findBySlug(eq(Article.toSlug(title)), any()))
-        .thenReturn(Optional.empty());
-
-    when(articleQueryService.findById(any(), any())).thenReturn(Optional.of(articleData));
+    when(articleApiFacade.createArticle(eq(title), eq(description), eq(body), eq(tagList), eq(user)))
+        .thenReturn(articleData);
 
     given()
         .contentType("application/json")
@@ -91,7 +89,7 @@ public class ArticlesApiTest extends TestWithCurrentUser {
         .body("article.author.username", equalTo(user.getUsername()))
         .body("article.author.id", equalTo(null));
 
-    verify(articleCommandService).createArticle(any(), any());
+    verify(articleApiFacade).createArticle(eq(title), eq(description), eq(body), eq(tagList), eq(user));
   }
 
   @Test
