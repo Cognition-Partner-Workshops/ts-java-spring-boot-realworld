@@ -17,8 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -28,6 +28,11 @@ public class GraphQLCustomizeExceptionHandler implements DataFetcherExceptionHan
       new DefaultDataFetcherExceptionHandler();
 
   @Override
+  public java.util.concurrent.CompletableFuture<DataFetcherExceptionHandlerResult> handleException(
+      DataFetcherExceptionHandlerParameters handlerParameters) {
+    return java.util.concurrent.CompletableFuture.completedFuture(onException(handlerParameters));
+  }
+
   public DataFetcherExceptionHandlerResult onException(
       DataFetcherExceptionHandlerParameters handlerParameters) {
     if (handlerParameters.getException() instanceof InvalidAuthenticationException) {
