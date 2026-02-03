@@ -7,6 +7,11 @@ import io.spring.application.user.UpdateUserCommand;
 import io.spring.application.user.UpdateUserParam;
 import io.spring.application.user.UserService;
 import io.spring.core.user.User;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.HashMap;
 import java.util.Map;
 import javax.validation.Valid;
@@ -23,11 +28,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(path = "/user")
 @AllArgsConstructor
+@Tag(name = "User and Authentication", description = "User registration and authentication endpoints")
 public class CurrentUserApi {
 
   private UserQueryService userQueryService;
   private UserService userService;
 
+  @Operation(
+      summary = "Get current user",
+      description = "Get the currently logged-in user. Auth required.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "User retrieved successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+      })
   @GetMapping
   public ResponseEntity currentUser(
       @AuthenticationPrincipal User currentUser,
@@ -37,6 +52,16 @@ public class CurrentUserApi {
         userResponse(new UserWithToken(userData, authorization.split(" ")[1])));
   }
 
+  @Operation(
+      summary = "Update current user",
+      description = "Update the currently logged-in user. Auth required.",
+      security = @SecurityRequirement(name = "bearerAuth"))
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "User updated successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "422", description = "Validation error")
+      })
   @PutMapping
   public ResponseEntity updateProfile(
       @AuthenticationPrincipal User currentUser,
