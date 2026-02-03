@@ -98,9 +98,39 @@ The frontend will run on http://localhost:3000 and connect to the backend on por
 # Try it out with [Docker](https://www.docker.com/)
 
 You'll need Docker installed.
-	
-    ./gradlew bootBuildImage --imageName spring-boot-realworld-example-app
-    docker run -p 8081:8080 spring-boot-realworld-example-app
+
+## Option 1: Using the Dockerfile (Recommended)
+
+Build the Docker image:
+
+```bash
+docker build -t spring-boot-realworld-example-app .
+```
+
+Run the container:
+
+```bash
+docker run -p 8080:8080 spring-boot-realworld-example-app
+```
+
+To persist the SQLite database across container restarts, mount a volume:
+
+```bash
+docker run -p 8080:8080 -v $(pwd)/data:/app/data spring-boot-realworld-example-app
+```
+
+The application will be available at http://localhost:8080. Test it with:
+
+```bash
+curl http://localhost:8080/tags
+```
+
+## Option 2: Using Spring Boot's buildpack
+
+```bash
+./gradlew bootBuildImage --imageName spring-boot-realworld-example-app
+docker run -p 8080:8080 spring-boot-realworld-example-app
+```
 
 # Try it out with a RealWorld frontend
 
