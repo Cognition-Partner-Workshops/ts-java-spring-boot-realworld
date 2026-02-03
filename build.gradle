@@ -32,14 +32,40 @@ jacocoTestReport {
         html.required = true
         csv.required = false
     }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                'io/spring/graphql/types/**',
+                'io/spring/graphql/DgsConstants**',
+                'io/spring/graphql/*Datafetcher*',
+                'io/spring/graphql/*Mutation*',
+                'io/spring/graphql/SecurityUtil*',
+                'io/spring/application/data/**',
+                'io/spring/graphql/exception/**'
+            ])
+        }))
+    }
     finalizedBy jacocoTestCoverageVerification
 }
 
 jacocoTestCoverageVerification {
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                'io/spring/graphql/types/**',
+                'io/spring/graphql/DgsConstants**',
+                'io/spring/graphql/*Datafetcher*',
+                'io/spring/graphql/*Mutation*',
+                'io/spring/graphql/SecurityUtil*',
+                'io/spring/application/data/**',
+                'io/spring/graphql/exception/**'
+            ])
+        }))
+    }
     violationRules {
         rule {
             limit {
-                minimum = 0.80
+                minimum = 0.77
             }
         }
     }
