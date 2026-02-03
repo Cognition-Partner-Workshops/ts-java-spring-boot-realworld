@@ -1,0 +1,20 @@
+# Persistent Volume Claim for RealWorld Article Management Microservice
+# Used for SQLite database persistence
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: realworld-data-pvc
+  namespace: realworld
+  labels:
+    app: realworld
+    component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  # Uncomment and specify storage class for cloud providers
+  # storageClassName: standard  # GKE
+  # storageClassName: gp2       # AWS EKS
+  # storageClassName: default   # Azure AKS

@@ -1,0 +1,8 @@
+# Kubernetes Namespace for RealWorld Article Management Microservice
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: realworld
+  labels:
+    app: realworld
+    environment: production

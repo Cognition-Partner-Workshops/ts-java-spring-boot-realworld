@@ -1,0 +1,114 @@
+# Docker Compose for Spring Boot RealWorld Example App
+# Microservice Use Case: Article Management Service with all dependencies
+#
+# This configuration provides:
+# - Spring Boot application container
+# - Persistent volume for SQLite database
+# - Health checks and restart policies
+# - Production-ready networking
+
+version: '3.8'
+
+services:
+  # ============================================
+  # Article Management Microservice
+  # ============================================
+  realworld-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: realworld-article-service
+    ports:
+      - "8080:8080"
+    environment:
+      # Application configuration
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:sqlite:/app/data/realworld.db
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.sqlite.JDBC
+      # JWT Configuration (override in production with secrets)
+      - JWT_SECRET=${JWT_SECRET:-nRvyYC4soFxBdZ-F-5Nnzz5USXstR1YylsTd-mA0aKtI9HUlriGrtkf-TiuDapkLiUCogO3JOK7kwZisrHp6wA}
+      - JWT_SESSIONTIME=${JWT_SESSIONTIME:-86400}
+      # JVM options for container
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom
+    volumes:
+      # Persistent volume for SQLite database
+      - realworld-data:/app/data
+    networks:
+      - realworld-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # ============================================
+  # Optional: PostgreSQL for Production
+  # Uncomment this section if migrating from SQLite to PostgreSQL
+  # ============================================
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: realworld-postgres
+  #   environment:
+  #     - POSTGRES_DB=realworld
+  #     - POSTGRES_USER=realworld
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-realworld_secret}
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - realworld-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U realworld -d realworld"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
+  # ============================================
+  # Optional: Redis for Caching/Sessions
+  # Uncomment for production caching layer
+  # ============================================
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: realworld-redis
+  #   command: redis-server --appendonly yes
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - realworld-network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  realworld-network:
+    driver: bridge
+    name: realworld-network
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  realworld-data:
+    driver: local
+    name: realworld-data
+  # postgres-data:
+  #   driver: local
+  # redis-data:
+  #   driver: local

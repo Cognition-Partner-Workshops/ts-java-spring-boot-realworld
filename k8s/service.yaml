@@ -1,0 +1,42 @@
+# Kubernetes Service for RealWorld Article Management Microservice
+apiVersion: v1
+kind: Service
+metadata:
+  name: realworld-service
+  namespace: realworld
+  labels:
+    app: realworld
+    component: api
+spec:
+  type: ClusterIP
+  selector:
+    app: realworld
+    component: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+
+---
+# NodePort Service for external access (development/testing)
+apiVersion: v1
+kind: Service
+metadata:
+  name: realworld-service-nodeport
+  namespace: realworld
+  labels:
+    app: realworld
+    component: api
+    access: external
+spec:
+  type: NodePort
+  selector:
+    app: realworld
+    component: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      nodePort: 30080
+      protocol: TCP

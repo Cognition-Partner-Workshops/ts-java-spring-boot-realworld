@@ -1,0 +1,41 @@
+# Kubernetes Ingress for RealWorld Article Management Microservice
+# Requires an Ingress Controller (nginx, traefik, etc.) to be installed
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: realworld-ingress
+  namespace: realworld
+  labels:
+    app: realworld
+    component: ingress
+  annotations:
+    # Nginx Ingress Controller annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    # Rate limiting (optional)
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    # CORS (optional - uncomment if needed)
+    # nginx.ingress.kubernetes.io/enable-cors: "true"
+    # nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: realworld.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: realworld-service
+                port:
+                  number: 80
+  # TLS configuration (uncomment for HTTPS)
+  # tls:
+  #   - hosts:
+  #       - realworld.local
+  #     secretName: realworld-tls-secret

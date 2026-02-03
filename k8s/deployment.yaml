@@ -1,0 +1,140 @@
+# Kubernetes Deployment for RealWorld Article Management Microservice
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realworld-app
+  namespace: realworld
+  labels:
+    app: realworld
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: realworld
+      component: api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: realworld
+        component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      # Security context for the pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      
+      # Service account (create if needed for RBAC)
+      serviceAccountName: default
+      
+      containers:
+        - name: realworld-app
+          image: realworld-article-service:latest
+          imagePullPolicy: IfNotPresent
+          
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          
+          # Environment variables from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: realworld-config
+          
+          # Environment variables from Secret
+          env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: realworld-secrets
+                  key: JWT_SECRET
+            - name: JAVA_OPTS
+              value: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
+          
+          # Resource limits and requests
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          
+          # Liveness probe - checks if the application is running
+          livenessProbe:
+            httpGet:
+              path: /tags
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          
+          # Readiness probe - checks if the application is ready to serve traffic
+          readinessProbe:
+            httpGet:
+              path: /tags
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          # Startup probe - allows for longer startup time
+          startupProbe:
+            httpGet:
+              path: /tags
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          
+          # Security context for the container
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          
+          # Volume mounts
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: tmp
+              mountPath: /tmp
+      
+      # Volumes
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: realworld-data-pvc
+        - name: tmp
+          emptyDir: {}
+      
+      # Pod disruption budget considerations
+      terminationGracePeriodSeconds: 30
+      
+      # Node affinity (optional - uncomment if needed)
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #             - key: kubernetes.io/os
+      #               operator: In
+      #               values:
+      #                 - linux

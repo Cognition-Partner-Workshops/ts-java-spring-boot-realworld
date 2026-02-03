@@ -1,0 +1,32 @@
+# ConfigMap for RealWorld Article Management Microservice
+# Contains non-sensitive configuration values
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: realworld-config
+  namespace: realworld
+  labels:
+    app: realworld
+    component: config
+data:
+  # Spring profiles
+  SPRING_PROFILES_ACTIVE: "kubernetes"
+  
+  # Database configuration (SQLite for simplicity)
+  SPRING_DATASOURCE_URL: "jdbc:sqlite:/app/data/realworld.db"
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.sqlite.JDBC"
+  
+  # JWT session time (24 hours in seconds)
+  JWT_SESSIONTIME: "86400"
+  
+  # Default image URL
+  IMAGE_DEFAULT: "https://static.productionready.io/images/smiley-cyrus.jpg"
+  
+  # MyBatis configuration
+  MYBATIS_CONFIGURATION_CACHE_ENABLED: "true"
+  MYBATIS_CONFIGURATION_DEFAULT_STATEMENT_TIMEOUT: "3000"
+  MYBATIS_CONFIGURATION_MAP_UNDERSCORE_TO_CAMEL_CASE: "true"
+  MYBATIS_CONFIGURATION_USE_GENERATED_KEYS: "true"
+  
+  # Logging levels
+  LOGGING_LEVEL_IO_SPRING: "INFO"
