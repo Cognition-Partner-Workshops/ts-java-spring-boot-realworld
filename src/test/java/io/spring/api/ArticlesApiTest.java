@@ -4,6 +4,7 @@ import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -151,6 +152,82 @@ public class ArticlesApiTest extends TestWithCurrentUser {
         .prettyPeek()
         .then()
         .statusCode(422);
+  }
+
+  @Test
+  public void should_read_article_by_id_success() throws Exception {
+    String id = "test-article-id";
+    String title = "Test New Article";
+    String slug = "test-new-article";
+    String description = "Desc";
+    String body = "Body";
+    List<String> tagList = asList("java", "spring", "jpg");
+    DateTime time = new DateTime();
+
+    ArticleData articleData =
+        new ArticleData(
+            id,
+            slug,
+            title,
+            description,
+            body,
+            false,
+            0,
+            time,
+            time,
+            tagList,
+            new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
+
+    when(articleQueryService.getArticleById(eq(id), eq(null))).thenReturn(Optional.of(articleData));
+
+    RestAssuredMockMvc.when()
+        .get("/articles/id/{id}", id)
+        .then()
+        .statusCode(200)
+        .body("article.id", equalTo(id))
+        .body("article.body", equalTo(body));
+  }
+
+  @Test
+  public void should_read_article_by_id_with_auth_success() throws Exception {
+    String id = "test-article-id";
+    String title = "Test New Article";
+    String slug = "test-new-article";
+    String description = "Desc";
+    String body = "Body";
+    List<String> tagList = asList("java", "spring", "jpg");
+    DateTime time = new DateTime();
+
+    ArticleData articleData =
+        new ArticleData(
+            id,
+            slug,
+            title,
+            description,
+            body,
+            false,
+            0,
+            time,
+            time,
+            tagList,
+            new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
+
+    when(articleQueryService.getArticleById(eq(id), eq(user))).thenReturn(Optional.of(articleData));
+
+    given()
+        .header("Authorization", "Token " + token)
+        .when()
+        .get("/articles/id/{id}", id)
+        .then()
+        .statusCode(200)
+        .body("article.id", equalTo(id))
+        .body("article.body", equalTo(body));
+  }
+
+  @Test
+  public void should_404_if_article_not_found_by_id() throws Exception {
+    when(articleQueryService.getArticleById(anyString(), any())).thenReturn(Optional.empty());
+    RestAssuredMockMvc.when().get("/articles/id/{id}", "non-existent-id").then().statusCode(404);
   }
 
   private HashMap<String, Object> prepareParam(

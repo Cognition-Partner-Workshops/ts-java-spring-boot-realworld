@@ -39,6 +39,18 @@ public class ArticleQueryService {
     }
   }
 
+  public Optional<ArticleData> getArticleById(String id, User user) {
+    ArticleData articleData = articleReadService.findById(id);
+    if (articleData == null) {
+      return Optional.empty();
+    } else {
+      if (user != null) {
+        fillExtraInfo(id, user, articleData);
+      }
+      return Optional.of(articleData);
+    }
+  }
+
   public Optional<ArticleData> findBySlug(String slug, User user) {
     ArticleData articleData = articleReadService.findBySlug(slug);
     if (articleData == null) {
