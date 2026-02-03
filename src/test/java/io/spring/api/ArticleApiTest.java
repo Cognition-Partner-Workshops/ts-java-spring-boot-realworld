@@ -5,25 +5,25 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import io.spring.JacksonCustomizations;
 import io.spring.TestHelper;
+import io.spring.api.exception.NoAuthorizationException;
+import io.spring.api.exception.ResourceNotFoundException;
 import io.spring.api.security.WebSecurityConfig;
-import io.spring.application.ArticleQueryService;
-import io.spring.application.article.ArticleCommandService;
 import io.spring.application.data.ArticleData;
 import io.spring.application.data.ProfileData;
+import io.spring.application.facade.ArticleFacade;
 import io.spring.core.article.Article;
-import io.spring.core.article.ArticleRepository;
 import io.spring.core.user.User;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,11 +39,7 @@ import org.springframework.test.web.servlet.MockMvc;
 public class ArticleApiTest extends TestWithCurrentUser {
   @Autowired private MockMvc mvc;
 
-  @MockBean private ArticleQueryService articleQueryService;
-
-  @MockBean private ArticleRepository articleRepository;
-
-  @MockBean ArticleCommandService articleCommandService;
+  @MockBean private ArticleFacade articleFacade;
 
   @Override
   @BeforeEach
@@ -66,7 +62,7 @@ public class ArticleApiTest extends TestWithCurrentUser {
             time);
     ArticleData articleData = TestHelper.getArticleDataFromArticleAndUser(article, user);
 
-    when(articleQueryService.findBySlug(eq(slug), eq(null))).thenReturn(Optional.of(articleData));
+    when(articleFacade.getArticle(eq(slug), eq(null))).thenReturn(articleData);
 
     RestAssuredMockMvc.when()
         .get("/articles/{slug}", slug)
@@ -79,7 +75,7 @@ public class ArticleApiTest extends TestWithCurrentUser {
 
   @Test
   public void should_404_if_article_not_found() throws Exception {
-    when(articleQueryService.findBySlug(anyString(), any())).thenReturn(Optional.empty());
+    when(articleFacade.getArticle(anyString(), any())).thenThrow(new ResourceNotFoundException());
     RestAssuredMockMvc.when().get("/articles/not-exists").then().statusCode(404);
   }
 
@@ -100,12 +96,8 @@ public class ArticleApiTest extends TestWithCurrentUser {
     ArticleData updatedArticleData =
         TestHelper.getArticleDataFromArticleAndUser(updatedArticle, user);
 
-    when(articleRepository.findBySlug(eq(originalArticle.getSlug())))
-        .thenReturn(Optional.of(originalArticle));
-    when(articleCommandService.updateArticle(eq(originalArticle), any()))
-        .thenReturn(updatedArticle);
-    when(articleQueryService.findBySlug(eq(updatedArticle.getSlug()), eq(user)))
-        .thenReturn(Optional.of(updatedArticleData));
+    when(articleFacade.updateArticle(eq(originalArticle.getSlug()), any(), eq(user)))
+        .thenReturn(updatedArticleData);
 
     given()
         .contentType("application/json")
@@ -125,35 +117,12 @@ public class ArticleApiTest extends TestWithCurrentUser {
     String description = "new description";
     Map<String, Object> updateParam = prepareUpdateParam(title, body, description);
 
-    User anotherUser = new User("test@test.com", "test", "123123", "", "");
-
     Article article =
         new Article(
-            title, description, body, Arrays.asList("java", "spring", "jpg"), anotherUser.getId());
+            title, description, body, Arrays.asList("java", "spring", "jpg"), "another-user-id");
 
-    DateTime time = new DateTime();
-    ArticleData articleData =
-        new ArticleData(
-            article.getId(),
-            article.getSlug(),
-            article.getTitle(),
-            article.getDescription(),
-            article.getBody(),
-            false,
-            0,
-            time,
-            time,
-            Arrays.asList("joda"),
-            new ProfileData(
-                anotherUser.getId(),
-                anotherUser.getUsername(),
-                anotherUser.getBio(),
-                anotherUser.getImage(),
-                false));
-
-    when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
-    when(articleQueryService.findBySlug(eq(article.getSlug()), eq(user)))
-        .thenReturn(Optional.of(articleData));
+    when(articleFacade.updateArticle(eq(article.getSlug()), any(), eq(user)))
+        .thenThrow(new NoAuthorizationException());
 
     given()
         .contentType("application/json")
@@ -173,7 +142,8 @@ public class ArticleApiTest extends TestWithCurrentUser {
 
     Article article =
         new Article(title, description, body, Arrays.asList("java", "spring", "jpg"), user.getId());
-    when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
+
+    doNothing().when(articleFacade).deleteArticle(eq(article.getSlug()), eq(user));
 
     given()
         .header("Authorization", "Token " + token)
@@ -181,8 +151,6 @@ public class ArticleApiTest extends TestWithCurrentUser {
         .delete("/articles/{slug}", article.getSlug())
         .then()
         .statusCode(204);
-
-    verify(articleRepository).remove(eq(article));
   }
 
   @Test
@@ -191,13 +159,12 @@ public class ArticleApiTest extends TestWithCurrentUser {
     String body = "new body";
     String description = "new description";
 
-    User anotherUser = new User("test@test.com", "test", "123123", "", "");
-
     Article article =
         new Article(
-            title, description, body, Arrays.asList("java", "spring", "jpg"), anotherUser.getId());
+            title, description, body, Arrays.asList("java", "spring", "jpg"), "another-user-id");
 
-    when(articleRepository.findBySlug(eq(article.getSlug()))).thenReturn(Optional.of(article));
+    doThrow(new NoAuthorizationException()).when(articleFacade).deleteArticle(eq(article.getSlug()), eq(user));
+
     given()
         .header("Authorization", "Token " + token)
         .when()
