@@ -98,4 +98,42 @@ public class UserTest {
     
     assertThat(user1.getId().equals(user2.getId()), is(false));
   }
+
+  @Test
+  public void should_have_equals_based_on_id() {
+    User user1 = new User("test@test.com", "testuser", "password", "bio", "image");
+    User user2 = new User("test@test.com", "testuser", "password", "bio", "image");
+    
+    assertThat(user1.equals(user1), is(true));
+    assertThat(user1.equals(user2), is(false));
+  }
+
+  @Test
+  public void should_not_equal_null() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    
+    assertThat(user.equals(null), is(false));
+  }
+
+  @Test
+  public void should_not_equal_different_type() {
+    User user = new User("test@test.com", "testuser", "password", "bio", "image");
+    
+    assertThat(user.equals("string"), is(false));
+  }
+
+  @Test
+  public void should_have_hashcode_based_on_id() {
+    User user1 = new User("test1@test.com", "user1", "password", "bio", "image");
+    User user2 = new User("test2@test.com", "user2", "password", "bio", "image");
+    
+    assertThat(user1.hashCode() != user2.hashCode(), is(true));
+  }
+
+  @Test
+  public void should_create_with_no_args_constructor() {
+    User user = new User();
+    
+    assertThat(user, is(notNullValue()));
+  }
 }

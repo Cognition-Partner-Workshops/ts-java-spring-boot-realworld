@@ -1,6 +1,7 @@
 package io.spring.core.comment;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -33,5 +34,43 @@ public class CommentTest {
     Comment comment = new Comment(body, "user-1", "article-1");
     
     assertThat(comment.getBody(), is(body));
+  }
+
+  @Test
+  public void should_have_equals_based_on_id() {
+    Comment comment1 = new Comment("Comment 1", "user-1", "article-1");
+    Comment comment2 = new Comment("Comment 2", "user-2", "article-2");
+    
+    assertThat(comment1.equals(comment1), is(true));
+    assertThat(comment1.equals(comment2), is(false));
+  }
+
+  @Test
+  public void should_not_equal_null() {
+    Comment comment = new Comment("Comment", "user-1", "article-1");
+    
+    assertThat(comment.equals(null), is(false));
+  }
+
+  @Test
+  public void should_not_equal_different_type() {
+    Comment comment = new Comment("Comment", "user-1", "article-1");
+    
+    assertThat(comment.equals("string"), is(false));
+  }
+
+  @Test
+  public void should_have_hashcode_based_on_id() {
+    Comment comment1 = new Comment("Comment 1", "user-1", "article-1");
+    Comment comment2 = new Comment("Comment 2", "user-2", "article-2");
+    
+    assertThat(comment1.hashCode(), is(not(comment2.hashCode())));
+  }
+
+  @Test
+  public void should_create_with_no_args_constructor() {
+    Comment comment = new Comment();
+    
+    assertThat(comment, is(notNullValue()));
   }
 }
