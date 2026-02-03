@@ -9,6 +9,7 @@ import io.spring.application.ProfileQueryService;
 import io.spring.application.data.ArticleData;
 import io.spring.application.data.CommentData;
 import io.spring.application.data.ProfileData;
+import io.spring.core.service.AuthContext;
 import io.spring.core.user.User;
 import io.spring.graphql.DgsConstants.ARTICLE;
 import io.spring.graphql.DgsConstants.COMMENT;
@@ -56,7 +57,7 @@ public class ProfileDatafetcher {
   }
 
   private Profile queryProfile(String username) {
-    User current = SecurityUtil.getCurrentUser().orElse(null);
+    User current = AuthContext.getCurrentUser().orElse(null);
     ProfileData profileData =
         profileQueryService
             .findByUsername(username, current)

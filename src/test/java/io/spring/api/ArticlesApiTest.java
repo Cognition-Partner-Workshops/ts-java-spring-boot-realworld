@@ -12,10 +12,12 @@ import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import io.spring.JacksonCustomizations;
 import io.spring.api.security.WebSecurityConfig;
 import io.spring.application.ArticleQueryService;
-import io.spring.application.article.ArticleCommandService;
+import io.spring.application.article.NewArticleParam;
 import io.spring.application.data.ArticleData;
 import io.spring.application.data.ProfileData;
+import io.spring.application.facade.ArticleFacade;
 import io.spring.core.article.Article;
+import io.spring.core.user.User;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,15 +36,17 @@ import org.springframework.test.web.servlet.MockMvc;
 public class ArticlesApiTest extends TestWithCurrentUser {
   @Autowired private MockMvc mvc;
 
+  @MockBean private ArticleFacade articleFacade;
+  
   @MockBean private ArticleQueryService articleQueryService;
-
-  @MockBean private ArticleCommandService articleCommandService;
 
   @Override
   @BeforeEach
   public void setUp() throws Exception {
     super.setUp();
     RestAssuredMockMvc.mockMvc(mvc);
+    // Mock the articleQueryService for the DuplicatedArticleValidator
+    when(articleQueryService.findBySlug(any(), any())).thenReturn(Optional.empty());
   }
 
   @Test
@@ -68,13 +72,8 @@ public class ArticlesApiTest extends TestWithCurrentUser {
             tagList,
             new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
 
-    when(articleCommandService.createArticle(any(), any()))
-        .thenReturn(new Article(title, description, body, tagList, user.getId()));
-
-    when(articleQueryService.findBySlug(eq(Article.toSlug(title)), any()))
-        .thenReturn(Optional.empty());
-
-    when(articleQueryService.findById(any(), any())).thenReturn(Optional.of(articleData));
+    when(articleFacade.createArticle(any(NewArticleParam.class), any(User.class)))
+        .thenReturn(articleData);
 
     given()
         .contentType("application/json")
@@ -91,7 +90,7 @@ public class ArticlesApiTest extends TestWithCurrentUser {
         .body("article.author.username", equalTo(user.getUsername()))
         .body("article.author.id", equalTo(null));
 
-    verify(articleCommandService).createArticle(any(), any());
+    verify(articleFacade).createArticle(any(NewArticleParam.class), any(User.class));
   }
 
   @Test
@@ -120,10 +119,10 @@ public class ArticlesApiTest extends TestWithCurrentUser {
     String slug = "how-to-train-your-dragon";
     String description = "Ever wonder how?";
     String body = "You have to believe";
-    String[] tagList = {"reactjs", "angularjs", "dragons"};
-    Map<String, Object> param = prepareParam(title, description, body, asList(tagList));
+    List<String> tagList = asList("reactjs", "angularjs", "dragons");
+    Map<String, Object> param = prepareParam(title, description, body, tagList);
 
-    ArticleData articleData =
+    ArticleData existingArticleData =
         new ArticleData(
             "123",
             slug,
@@ -134,13 +133,12 @@ public class ArticlesApiTest extends TestWithCurrentUser {
             0,
             new DateTime(),
             new DateTime(),
-            asList(tagList),
+            tagList,
             new ProfileData("userid", user.getUsername(), user.getBio(), user.getImage(), false));
 
+    // Mock the validator to find an existing article with the same slug
     when(articleQueryService.findBySlug(eq(Article.toSlug(title)), any()))
-        .thenReturn(Optional.of(articleData));
-
-    when(articleQueryService.findById(any(), any())).thenReturn(Optional.of(articleData));
+        .thenReturn(Optional.of(existingArticleData));
 
     given()
         .contentType("application/json")

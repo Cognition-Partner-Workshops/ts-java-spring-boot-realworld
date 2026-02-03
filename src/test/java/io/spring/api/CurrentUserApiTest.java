@@ -9,8 +9,9 @@ import static org.mockito.Mockito.when;
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import io.spring.JacksonCustomizations;
 import io.spring.api.security.WebSecurityConfig;
-import io.spring.application.UserQueryService;
-import io.spring.application.user.UserService;
+import io.spring.application.data.UserWithToken;
+import io.spring.application.facade.UserFacade;
+import io.spring.application.user.UpdateUserParam;
 import io.spring.core.user.User;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +30,6 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({
   WebSecurityConfig.class,
   JacksonCustomizations.class,
-  UserService.class,
   ValidationAutoConfiguration.class,
   BCryptPasswordEncoder.class
 })
@@ -37,7 +37,7 @@ public class CurrentUserApiTest extends TestWithCurrentUser {
 
   @Autowired private MockMvc mvc;
 
-  @MockBean private UserQueryService userQueryService;
+  @MockBean private UserFacade userFacade;
 
   @Override
   @BeforeEach
@@ -48,7 +48,8 @@ public class CurrentUserApiTest extends TestWithCurrentUser {
 
   @Test
   public void should_get_current_user_with_token() throws Exception {
-    when(userQueryService.findById(any())).thenReturn(Optional.of(userData));
+    UserWithToken userWithToken = new UserWithToken(userData, token);
+    when(userFacade.getCurrentUser(any(User.class), eq(token))).thenReturn(userWithToken);
 
     given()
         .header("Authorization", "Token " + token)
@@ -106,7 +107,9 @@ public class CurrentUserApiTest extends TestWithCurrentUser {
     when(userRepository.findByUsername(eq(newUsername))).thenReturn(Optional.empty());
     when(userRepository.findByEmail(eq(newEmail))).thenReturn(Optional.empty());
 
-    when(userQueryService.findById(eq(user.getId()))).thenReturn(Optional.of(userData));
+    UserWithToken userWithToken = new UserWithToken(userData, token);
+    when(userFacade.updateUser(any(User.class), any(UpdateUserParam.class), eq(token)))
+        .thenReturn(userWithToken);
 
     given()
         .contentType("application/json")
@@ -126,11 +129,18 @@ public class CurrentUserApiTest extends TestWithCurrentUser {
 
     Map<String, Object> param = prepareUpdateParam(newEmail, newBio, newUsername);
 
+    // Mock the repository to return an existing user with the same email (for validation)
     when(userRepository.findByEmail(eq(newEmail)))
-        .thenReturn(Optional.of(new User(newEmail, "username", "123", "", "")));
+        .thenReturn(Optional.of(new User(newEmail, "existinguser", "123", "", "")));
     when(userRepository.findByUsername(eq(newUsername))).thenReturn(Optional.empty());
 
-    when(userQueryService.findById(eq(user.getId()))).thenReturn(Optional.of(userData));
+    // The facade should throw an InvalidRequestException when email already exists
+    org.springframework.validation.Errors errors = 
+        new org.springframework.validation.BeanPropertyBindingResult(
+            new UpdateUserParam("email@test.com", "username", "password", "bio", "image"), "updateUserParam");
+    errors.rejectValue("email", "Duplicated", "email already exist");
+    when(userFacade.updateUser(any(User.class), any(UpdateUserParam.class), eq(token)))
+        .thenThrow(new io.spring.api.exception.InvalidRequestException(errors));
 
     given()
         .contentType("application/json")

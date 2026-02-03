@@ -17,6 +17,7 @@ import io.spring.application.CursorPager.Direction;
 import io.spring.application.DateTimeCursor;
 import io.spring.application.data.ArticleData;
 import io.spring.application.data.CommentData;
+import io.spring.core.service.AuthContext;
 import io.spring.core.user.User;
 import io.spring.core.user.UserRepository;
 import io.spring.graphql.DgsConstants.ARTICLEPAYLOAD;
@@ -50,7 +51,7 @@ public class ArticleDatafetcher {
       throw new IllegalArgumentException("first 和 last 必须只存在一个");
     }
 
-    User current = SecurityUtil.getCurrentUser().orElse(null);
+    User current = AuthContext.getCurrentUser().orElse(null);
 
     CursorPager<ArticleData> articles;
     if (first != null) {
@@ -146,7 +147,7 @@ public class ArticleDatafetcher {
       throw new IllegalArgumentException("first 和 last 必须只存在一个");
     }
 
-    User current = SecurityUtil.getCurrentUser().orElse(null);
+    User current = AuthContext.getCurrentUser().orElse(null);
     Profile profile = dfe.getSource();
 
     CursorPager<ArticleData> articles;
@@ -200,7 +201,7 @@ public class ArticleDatafetcher {
       throw new IllegalArgumentException("first 和 last 必须只存在一个");
     }
 
-    User current = SecurityUtil.getCurrentUser().orElse(null);
+    User current = AuthContext.getCurrentUser().orElse(null);
     Profile profile = dfe.getSource();
 
     CursorPager<ArticleData> articles;
@@ -256,7 +257,7 @@ public class ArticleDatafetcher {
       throw new IllegalArgumentException("first 和 last 必须只存在一个");
     }
 
-    User current = SecurityUtil.getCurrentUser().orElse(null);
+    User current = AuthContext.getCurrentUser().orElse(null);
 
     CursorPager<ArticleData> articles;
     if (first != null) {
@@ -301,7 +302,7 @@ public class ArticleDatafetcher {
   public DataFetcherResult<Article> getArticle(DataFetchingEnvironment dfe) {
     io.spring.core.article.Article article = dfe.getLocalContext();
 
-    User current = SecurityUtil.getCurrentUser().orElse(null);
+    User current = AuthContext.getCurrentUser().orElse(null);
     ArticleData articleData =
         articleQueryService
             .findById(article.getId(), current)
@@ -322,7 +323,7 @@ public class ArticleDatafetcher {
   public DataFetcherResult<Article> getCommentArticle(
       DataFetchingEnvironment dataFetchingEnvironment) {
     CommentData comment = dataFetchingEnvironment.getLocalContext();
-    User current = SecurityUtil.getCurrentUser().orElse(null);
+    User current = AuthContext.getCurrentUser().orElse(null);
     ArticleData articleData =
         articleQueryService
             .findById(comment.getArticleId(), current)
@@ -341,7 +342,7 @@ public class ArticleDatafetcher {
 
   @DgsQuery(field = QUERY.Article)
   public DataFetcherResult<Article> findArticleBySlug(@InputArgument("slug") String slug) {
-    User current = SecurityUtil.getCurrentUser().orElse(null);
+    User current = AuthContext.getCurrentUser().orElse(null);
     ArticleData articleData =
         articleQueryService.findBySlug(slug, current).orElseThrow(ResourceNotFoundException::new);
     Article articleResult = buildArticleResult(articleData);
