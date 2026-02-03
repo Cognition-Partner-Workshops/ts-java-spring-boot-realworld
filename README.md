@@ -17,6 +17,21 @@ The GraphQL schema is https://github.com/gothinkster/spring-boot-realworld-examp
 ![](graphql-schema.png)
 
 And this implementation is using [dgs-framework](https://github.com/Netflix/dgs-framework) which is a quite new java graphql server framework.
+
+# REST-to-GraphQL Adapter Layer
+
+The REST API has been refactored to use a thin adapter layer that internally routes all REST requests to the corresponding GraphQL operations. This architecture provides several benefits:
+
+* **Single source of truth**: All business logic flows through the GraphQL layer, ensuring consistency between REST and GraphQL APIs
+* **Backward compatibility**: All existing REST endpoint URLs and response formats remain unchanged for API clients
+* **Simplified maintenance**: Changes to business logic only need to be made in one place (the GraphQL layer)
+
+The adapter layer handles:
+* **Pagination translation**: Converts REST offset/limit parameters to GraphQL cursor-based pagination
+* **Response wrapping**: Wraps GraphQL responses in the expected REST format (e.g., `{"article": {...}}`, `{"user": {...}}`)
+* **Authentication**: Preserves JWT token extraction from Authorization headers
+
+The adapter is implemented in `src/main/java/io/spring/api/adapter/RestToGraphQLAdapter.java` and is used by all REST controllers in `src/main/java/io/spring/api/`.
 # How it works
 
 The application uses Spring Boot (Web, Mybatis).
