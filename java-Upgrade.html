@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java 21 Migration Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #7f8c8d;
+        }
+        code {
+            background-color: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+        }
+        .step {
+            background-color: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .file-list {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            column-count: 2;
+        }
+        .file-list li {
+            margin-bottom: 5px;
+        }
+        .summary-box {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Java 21 Migration Guide</h1>
+    
+    <p>This document outlines the steps taken to upgrade the spring-boot-realworld-example-app project from Java 11 to Java 21, including all configuration changes, dependency updates, and code modifications required.</p>
+
+    <h2>Overview</h2>
+    <p>The migration involved upgrading from Java 11 to Java 21 LTS, which required updating Spring Boot from version 2.6.3 to 3.2.5. Spring Boot 3.x brings significant changes including the migration from Java EE (javax.*) to Jakarta EE (jakarta.*) namespaces, Spring Security 6.x API changes, and updated dependency requirements.</p>
+
+    <h2>Prerequisites</h2>
+    <div class="info">
+        <p>Before starting the migration, ensure you have Java 21 JDK installed on your development machine. You can verify your Java version by running:</p>
+        <pre><code>java -version</code></pre>
+    </div>
+
+    <div class="step">
+        <h2>Step 1: Update Gradle Wrapper</h2>
+        <p>The Gradle wrapper must be updated to support Java 21. Gradle 7.x does not support Java 21 (class file version 65), so we upgraded to Gradle 8.7.</p>
+        <p>In <code>gradle/wrapper/gradle-wrapper.properties</code>, change:</p>
+        <table>
+            <tr>
+                <th>Before</th>
+                <th>After</th>
+            </tr>
+            <tr>
+                <td><code>gradle-7.4-bin.zip</code></td>
+                <td><code>gradle-8.7-bin.zip</code></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="step">
+        <h2>Step 2: Update Java Version Configuration</h2>
+        <p>Update the <code>.java-version</code> file in the project root from <code>11</code> to <code>21</code>.</p>
+        <p>Update the GitHub Actions workflow in <code>.github/workflows/gradle.yml</code> to use Java 21:</p>
+        <table>
+            <tr>
+                <th>Before</th>
+                <th>After</th>
+            </tr>
+            <tr>
+                <td><code>java-version: '11'</code></td>
+                <td><code>java-version: '21'</code></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="step">
+        <h2>Step 3: Update build.gradle</h2>
+        
+        <h3>Plugin Updates</h3>
+        <table>
+            <tr>
+                <th>Plugin</th>
+                <th>Old Version</th>
+                <th>New Version</th>
+            </tr>
+            <tr>
+                <td>Spring Boot</td>
+                <td>2.6.3</td>
+                <td>3.2.5</td>
+            </tr>
+            <tr>
+                <td>Spring Dependency Management</td>
+                <td>1.0.11.RELEASE</td>
+                <td>1.1.4</td>
+            </tr>
+            <tr>
+                <td>DGS Codegen</td>
+                <td>5.0.6</td>
+                <td>6.2.1</td>
+            </tr>
+            <tr>
+                <td>Spotless</td>
+                <td>6.2.1</td>
+                <td>6.25.0</td>
+            </tr>
+        </table>
+
+        <h3>Java Compatibility</h3>
+        <p>Update both <code>sourceCompatibility</code> and <code>targetCompatibility</code> from <code>'11'</code> to <code>'21'</code>.</p>
+
+        <h3>JaCoCo Version</h3>
+        <p>Update <code>toolVersion</code> from <code>0.8.7</code> to <code>0.8.11</code>.</p>
+
+        <h3>Dependency Updates</h3>
+        <table>
+            <tr>
+                <th>Dependency</th>
+                <th>Old Version</th>
+                <th>New Version</th>
+            </tr>
+            <tr>
+                <td>MyBatis Spring Boot Starter</td>
+                <td>2.2.2</td>
+                <td>3.0.3</td>
+            </tr>
+            <tr>
+                <td>Netflix DGS Starter</td>
+                <td>4.9.21</td>
+                <td>8.5.5</td>
+            </tr>
+            <tr>
+                <td>JJWT (api, impl, jackson)</td>
+                <td>0.11.2</td>
+                <td>0.12.5</td>
+            </tr>
+            <tr>
+                <td>Joda-Time</td>
+                <td>2.10.13</td>
+                <td>2.12.7</td>
+            </tr>
+            <tr>
+                <td>SQLite JDBC</td>
+                <td>3.36.0.3</td>
+                <td>3.45.2.0</td>
+            </tr>
+            <tr>
+                <td>Rest-Assured</td>
+                <td>4.5.1</td>
+                <td>5.4.0</td>
+            </tr>
+            <tr>
+                <td>Mockito-inline</td>
+                <td>4.0.0</td>
+                <td>5.2.0</td>
+            </tr>
+            <tr>
+                <td>Selenium</td>
+                <td>4.15.0</td>
+                <td>4.18.1</td>
+            </tr>
+            <tr>
+                <td>WebDriver Manager</td>
+                <td>5.6.2</td>
+                <td>5.7.0</td>
+            </tr>
+            <tr>
+                <td>TestNG</td>
+                <td>7.8.0</td>
+                <td>7.9.0</td>
+            </tr>
+            <tr>
+                <td>HttpClient5</td>
+                <td>5.2.1</td>
+                <td>5.3.1</td>
+            </tr>
+        </table>
+
+        <div class="warning">
+            <strong>Important:</strong> Use <code>graphql-dgs-spring-boot-starter</code>, not <code>graphql-dgs-spring-graphql-starter</code>, to avoid conflicts with Spring's GraphQL auto-configuration.
+        </div>
+    </div>
+
+    <div class="step">
+        <h2>Step 4: Migrate javax.* to jakarta.* Namespaces</h2>
+        <p>Spring Boot 3.x requires Jakarta EE 9+, which uses the <code>jakarta.*</code> namespace instead of <code>javax.*</code>.</p>
+
+        <h3>Validation Imports</h3>
+        <table>
+            <tr>
+                <th>Old Import</th>
+                <th>New Import</th>
+            </tr>
+            <tr>
+                <td><code>javax.validation.Valid</code></td>
+                <td><code>jakarta.validation.Valid</code></td>
+            </tr>
+            <tr>
+                <td><code>javax.validation.constraints.*</code></td>
+                <td><code>jakarta.validation.constraints.*</code></td>
+            </tr>
+            <tr>
+                <td><code>javax.validation.ConstraintValidator</code></td>
+                <td><code>jakarta.validation.ConstraintValidator</code></td>
+            </tr>
+            <tr>
+                <td><code>javax.validation.Constraint</code></td>
+                <td><code>jakarta.validation.Constraint</code></td>
+            </tr>
+        </table>
+
+        <h3>Servlet Imports</h3>
+        <table>
+            <tr>
+                <th>Old Import</th>
+                <th>New Import</th>
+            </tr>
+            <tr>
+                <td><code>javax.servlet.FilterChain</code></td>
+                <td><code>jakarta.servlet.FilterChain</code></td>
+            </tr>
+            <tr>
+                <td><code>javax.servlet.ServletException</code></td>
+                <td><code>jakarta.servlet.ServletException</code></td>
+            </tr>
+            <tr>
+                <td><code>javax.servlet.http.HttpServletRequest</code></td>
+                <td><code>jakarta.servlet.http.HttpServletRequest</code></td>
+            </tr>
+            <tr>
+                <td><code>javax.servlet.http.HttpServletResponse</code></td>
+                <td><code>jakarta.servlet.http.HttpServletResponse</code></td>
+            </tr>
+        </table>
+
+        <h3>Files Requiring Updates</h3>
+        <ul class="file-list">
+            <li>UsersApi.java</li>
+            <li>ArticlesApi.java</li>
+            <li>ArticleApi.java</li>
+            <li>CommentsApi.java</li>
+            <li>CurrentUserApi.java</li>
+            <li>UserService.java</li>
+            <li>RegisterParam.java</li>
+            <li>UpdateUserParam.java</li>
+            <li>DuplicatedEmailConstraint.java</li>
+            <li>DuplicatedUsernameConstraint.java</li>
+            <li>DuplicatedEmailValidator.java</li>
+            <li>DuplicatedUsernameValidator.java</li>
+            <li>ArticleCommandService.java</li>
+            <li>NewArticleParam.java</li>
+            <li>DuplicatedArticleConstraint.java</li>
+            <li>DuplicatedArticleValidator.java</li>
+            <li>JwtTokenFilter.java</li>
+            <li>CustomizeExceptionHandler.java</li>
+            <li>GraphQLCustomizeExceptionHandler.java</li>
+            <li>UserMutation.java</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>Step 5: Refactor Spring Security Configuration</h2>
+        <p>Spring Security 6.x removed the <code>WebSecurityConfigurerAdapter</code> class. The security configuration must be refactored to use the <code>SecurityFilterChain</code> bean pattern.</p>
+
+        <h3>Key Changes</h3>
+        <ul>
+            <li>Create a <code>@Bean</code> method that returns <code>SecurityFilterChain</code></li>
+            <li>Use the new lambda-based DSL for configuration</li>
+            <li>Replace <code>antMatchers()</code> with <code>requestMatchers()</code></li>
+            <li>Replace <code>authorizeRequests()</code> with <code>authorizeHttpRequests()</code></li>
+        </ul>
+
+        <h3>Example Configuration</h3>
+        <pre><code>@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http.csrf(AbstractHttpConfigurer::disable)
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        .exceptionHandling(ex -> ex.authenticationEntryPoint(
+            new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+        .sessionManagement(session -> 
+            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers(HttpMethod.OPTIONS).permitAll()
+            .requestMatchers("/graphiql", "/graphql").permitAll()
+            .requestMatchers(HttpMethod.GET, "/articles/feed").authenticated()
+            .requestMatchers(HttpMethod.POST, "/users", "/users/login").permitAll()
+            .requestMatchers(HttpMethod.GET, "/articles/**", "/profiles/**", "/tags").permitAll()
+            .anyRequest().authenticated());
+    
+    http.addFilterBefore(jwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+    return http.build();
+}</code></pre>
+    </div>
+
+    <div class="step">
+        <h2>Step 6: Update JJWT Library Usage</h2>
+        <p>The JJWT library 0.12.x has significant API changes from 0.11.x.</p>
+
+        <h3>Token Generation Changes</h3>
+        <table>
+            <tr>
+                <th>Old API</th>
+                <th>New API</th>
+            </tr>
+            <tr>
+                <td><code>setSubject()</code></td>
+                <td><code>subject()</code></td>
+            </tr>
+            <tr>
+                <td><code>setExpiration()</code></td>
+                <td><code>expiration()</code></td>
+            </tr>
+        </table>
+
+        <h3>Token Parsing Changes</h3>
+        <table>
+            <tr>
+                <th>Old API</th>
+                <th>New API</th>
+            </tr>
+            <tr>
+                <td><code>Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token)</code></td>
+                <td><code>Jwts.parser().verifyWith(key).build().parseSignedClaims(token)</code></td>
+            </tr>
+            <tr>
+                <td><code>claimsJws.getBody()</code></td>
+                <td><code>claimsJws.getPayload()</code></td>
+            </tr>
+        </table>
+
+        <h3>Key Generation</h3>
+        <pre><code>// Old
+this.signingKey = new SecretKeySpec(secret.getBytes(), signatureAlgorithm.getJcaName());
+
+// New
+this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));</code></pre>
+    </div>
+
+    <div class="step">
+        <h2>Step 7: Update GraphQL Exception Handler</h2>
+        <p>The Netflix DGS 8.x changed the <code>DataFetcherExceptionHandler</code> interface.</p>
+
+        <h3>Method Signature Change</h3>
+        <table>
+            <tr>
+                <th>Old</th>
+                <th>New</th>
+            </tr>
+            <tr>
+                <td><code>DataFetcherExceptionHandlerResult onException(...)</code></td>
+                <td><code>CompletableFuture&lt;DataFetcherExceptionHandlerResult&gt; handleException(...)</code></td>
+            </tr>
+        </table>
+
+        <h3>Implementation Changes</h3>
+        <ul>
+            <li>Wrap return values with <code>CompletableFuture.completedFuture()</code></li>
+            <li>Call <code>defaultHandler.handleException()</code> instead of <code>defaultHandler.onException()</code></li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>Step 8: Update GraphQL PageInfo Types</h2>
+        <p>The GraphQL datafetchers need to use the generated <code>PageInfo</code> type instead of <code>graphql.relay.DefaultPageInfo</code>.</p>
+
+        <h3>Import Changes</h3>
+        <pre><code>// Old
+import graphql.relay.DefaultPageInfo;
+
+// New
+import io.spring.graphql.types.PageInfo;</code></pre>
+
+        <h3>Builder Pattern Changes</h3>
+        <pre><code>// Old
+return new DefaultPageInfo(
+    new DefaultConnectionCursor(startCursor),
+    new DefaultConnectionCursor(endCursor),
+    hasPrevious,
+    hasNext);
+
+// New
+return PageInfo.newBuilder()
+    .startCursor(startCursor)
+    .endCursor(endCursor)
+    .hasPreviousPage(hasPrevious)
+    .hasNextPage(hasNext)
+    .build();</code></pre>
+    </div>
+
+    <div class="step">
+        <h2>Step 9: Update CustomizeExceptionHandler</h2>
+        <p>The <code>ResponseEntityExceptionHandler</code> method signature changed in Spring 6.x.</p>
+        <pre><code>// Old
+protected ResponseEntity&lt;Object&gt; handleMethodArgumentNotValid(
+    MethodArgumentNotValidException e,
+    HttpHeaders headers,
+    HttpStatus status,  // Changed type
+    WebRequest request)
+
+// New
+protected ResponseEntity&lt;Object&gt; handleMethodArgumentNotValid(
+    MethodArgumentNotValidException e,
+    HttpHeaders headers,
+    HttpStatusCode status,  // Now HttpStatusCode
+    WebRequest request)</code></pre>
+    </div>
+
+    <div class="step">
+        <h2>Step 10: Update Selenium WebDriverWait</h2>
+        <p>Selenium 4.x changed the <code>WebDriverWait</code> constructor to require <code>Duration</code> instead of <code>long</code>.</p>
+        <pre><code>// Old
+this.wait = new WebDriverWait(driver, DEFAULT_TIMEOUT_SECONDS);
+
+// New
+import java.time.Duration;
+this.wait = new WebDriverWait(driver, Duration.ofSeconds(DEFAULT_TIMEOUT_SECONDS));</code></pre>
+    </div>
+
+    <div class="step">
+        <h2>Step 11: Verify the Upgrade</h2>
+        <p>After completing all the changes, run the following commands to verify the upgrade:</p>
+        <pre><code># Compile the project
+./gradlew compileJava --no-daemon
+
+# Run tests
+./gradlew test --no-daemon</code></pre>
+        <p>All tests should pass after the migration.</p>
+    </div>
+
+    <h2>Common Issues and Solutions</h2>
+    
+    <div class="warning">
+        <h3>Issue: Unsupported class file major version 65</h3>
+        <p><strong>Cause:</strong> Using Gradle 7.x with Java 21</p>
+        <p><strong>Solution:</strong> Upgrade Gradle to version 8.7 or later</p>
+    </div>
+
+    <div class="warning">
+        <h3>Issue: Package javax.validation does not exist</h3>
+        <p><strong>Cause:</strong> Spring Boot 3.x uses Jakarta EE 9+</p>
+        <p><strong>Solution:</strong> Update all <code>javax.validation</code> imports to <code>jakarta.validation</code></p>
+    </div>
+
+    <div class="warning">
+        <h3>Issue: WebSecurityConfigurerAdapter cannot be resolved</h3>
+        <p><strong>Cause:</strong> Class removed in Spring Security 6.x</p>
+        <p><strong>Solution:</strong> Refactor to use <code>SecurityFilterChain</code> bean pattern</p>
+    </div>
+
+    <div class="warning">
+        <h3>Issue: Method parserBuilder() not found in Jwts</h3>
+        <p><strong>Cause:</strong> JJWT 0.12.x changed the API</p>
+        <p><strong>Solution:</strong> Use <code>Jwts.parser().verifyWith(key)</code> instead</p>
+    </div>
+
+    <div class="warning">
+        <h3>Issue: No node type for 'ArticlesConnection'</h3>
+        <p><strong>Cause:</strong> Using <code>graphql-dgs-spring-graphql-starter</code> which conflicts with Spring's GraphQL</p>
+        <p><strong>Solution:</strong> Use <code>graphql-dgs-spring-boot-starter</code> instead</p>
+    </div>
+
+    <div class="warning">
+        <h3>Issue: WebDriverWait constructor expects Duration</h3>
+        <p><strong>Cause:</strong> Selenium 4.x changed the constructor signature</p>
+        <p><strong>Solution:</strong> Use <code>Duration.ofSeconds()</code> to wrap the timeout value</p>
+    </div>
+
+    <div class="summary-box">
+        <h2>Summary of Changes</h2>
+        <p>This migration updated the project from Java 11 to Java 21 with Spring Boot 3.2.5. The key changes included:</p>
+        <ul>
+            <li>Upgraded Gradle from 7.4 to 8.7</li>
+            <li>Migrated all <code>javax.*</code> imports to <code>jakarta.*</code></li>
+            <li>Refactored Spring Security configuration to use <code>SecurityFilterChain</code></li>
+            <li>Updated JJWT library usage for version 0.12.x</li>
+            <li>Updated GraphQL exception handler for DGS 8.x</li>
+            <li>Fixed PageInfo type compatibility in GraphQL datafetchers</li>
+            <li>Updated Selenium WebDriverWait for version 4.x</li>
+        </ul>
+        <p><strong>All tests pass after the migration, confirming that the application functions correctly with Java 21.</strong></p>
+    </div>
+
+    <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em;">
+        <p>Generated as part of the Java 21 migration for spring-boot-realworld-example-app</p>
+    </footer>
+</body>
+</html>
