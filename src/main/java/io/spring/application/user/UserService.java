@@ -43,13 +43,24 @@ public class UserService {
     return user;
   }
 
+  private static final int MIN_PASSWORD_LENGTH = 8;
+
   public void updateUser(@Valid UpdateUserCommand command) {
     User user = command.getTargetUser();
     UpdateUserParam updateUserParam = command.getParam();
+    String password = updateUserParam.getPassword();
+    String encodedPassword = "";
+    if (!password.isEmpty()) {
+      if (password.length() < MIN_PASSWORD_LENGTH) {
+        throw new IllegalArgumentException(
+            "password must be at least " + MIN_PASSWORD_LENGTH + " characters");
+      }
+      encodedPassword = passwordEncoder.encode(password);
+    }
     user.update(
         updateUserParam.getEmail(),
         updateUserParam.getUsername(),
-        updateUserParam.getPassword(),
+        encodedPassword,
         updateUserParam.getBio(),
         updateUserParam.getImage());
     userRepository.save(user);
