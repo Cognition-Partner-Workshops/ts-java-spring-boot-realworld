@@ -16,8 +16,8 @@ import io.spring.application.data.ProfileData;
 import io.spring.core.article.Article;
 import io.spring.core.article.ArticleRepository;
 import io.spring.core.article.Tag;
-import io.spring.core.favorite.ArticleFavorite;
-import io.spring.core.favorite.ArticleFavoriteRepository;
+import io.spring.core.bookmark.ArticleBookmark;
+import io.spring.core.bookmark.ArticleBookmarkRepository;
 import io.spring.core.user.User;
 import java.util.Arrays;
 import java.util.Optional;
@@ -30,12 +30,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(ArticleFavoriteApi.class)
+@WebMvcTest(ArticleBookmarkApi.class)
 @Import({WebSecurityConfig.class, JacksonCustomizations.class})
-public class ArticleFavoriteApiTest extends TestWithCurrentUser {
+public class ArticleBookmarkApiTest extends TestWithCurrentUser {
   @Autowired private MockMvc mvc;
 
-  @MockBean private ArticleFavoriteRepository articleFavoriteRepository;
+  @MockBean private ArticleBookmarkRepository articleBookmarkRepository;
 
   @MockBean private ArticleRepository articleRepository;
 
@@ -74,31 +74,53 @@ public class ArticleFavoriteApiTest extends TestWithCurrentUser {
   }
 
   @Test
-  public void should_favorite_an_article_success() throws Exception {
+  public void should_bookmark_an_article_success() throws Exception {
     given()
         .header("Authorization", "Token " + token)
         .when()
-        .post("/articles/{slug}/favorite", article.getSlug())
+        .post("/articles/{slug}/bookmark", article.getSlug())
         .prettyPeek()
         .then()
         .statusCode(200)
         .body("article.id", equalTo(article.getId()));
 
-    verify(articleFavoriteRepository).save(any());
+    verify(articleBookmarkRepository).save(any());
   }
 
   @Test
-  public void should_unfavorite_an_article_success() throws Exception {
-    when(articleFavoriteRepository.find(eq(article.getId()), eq(user.getId())))
-        .thenReturn(Optional.of(new ArticleFavorite(article.getId(), user.getId())));
+  public void should_unbookmark_an_article_success() throws Exception {
+    when(articleBookmarkRepository.find(eq(article.getId()), eq(user.getId())))
+        .thenReturn(Optional.of(new ArticleBookmark(article.getId(), user.getId())));
     given()
         .header("Authorization", "Token " + token)
         .when()
-        .delete("/articles/{slug}/favorite", article.getSlug())
+        .delete("/articles/{slug}/bookmark", article.getSlug())
         .prettyPeek()
         .then()
         .statusCode(200)
         .body("article.id", equalTo(article.getId()));
-    verify(articleFavoriteRepository).remove(new ArticleFavorite(article.getId(), user.getId()));
+    verify(articleBookmarkRepository).remove(new ArticleBookmark(article.getId(), user.getId()));
+  }
+
+  @Test
+  public void should_fail_bookmark_with_no_auth() throws Exception {
+    given()
+        .when()
+        .post("/articles/{slug}/bookmark", article.getSlug())
+        .prettyPeek()
+        .then()
+        .statusCode(401);
+  }
+
+  @Test
+  public void should_fail_bookmark_article_not_found() throws Exception {
+    when(articleRepository.findBySlug(eq("nonexistent"))).thenReturn(Optional.empty());
+    given()
+        .header("Authorization", "Token " + token)
+        .when()
+        .post("/articles/{slug}/bookmark", "nonexistent")
+        .prettyPeek()
+        .then()
+        .statusCode(404);
   }
 }
