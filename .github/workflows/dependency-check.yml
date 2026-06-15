@@ -44,9 +44,15 @@ jobs:
           args: >
             --failOnCVSS 7
             --suppression config/owasp-suppressions.xml
-        env:
-          JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/11*/x64
         continue-on-error: true
+
+      - name: Verify scan produced a report
+        if: steps.depcheck.outcome == 'failure'
+        run: |
+          if ! find . -name 'dependency-check-report.json' | grep -q .; then
+            echo "::error::Dependency-Check failed without producing a report (infrastructure error)"
+            exit 1
+          fi
 
       - name: Parse findings and create issues
         if: steps.depcheck.outcome == 'failure'
