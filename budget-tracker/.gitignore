@@ -1,0 +1,8 @@
+build/
+.gradle/
+*.class
+*.jar
+*.log
+budget_data.json
+.idea/
+*.iml
