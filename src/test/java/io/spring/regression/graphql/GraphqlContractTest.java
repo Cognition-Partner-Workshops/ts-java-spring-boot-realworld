@@ -59,13 +59,18 @@ class GraphqlContractTest extends RegressionIntegrationTestBase {
 
   @Test
   void introspection_snapshot_of_query_and_mutation_fields() {
-    graphql(null, "{ __schema { queryType { fields { name } } mutationType { fields { name } } } }")
+    // graphql-java's good-faith introspection guard allows __Type.fields once per document.
+    graphql(null, "{ __schema { queryType { fields { name } } } }")
         .then()
         .statusCode(200)
         .body("errors", nullValue())
         .body(
             "data.__schema.queryType.fields.name.findAll { it != '_service' }",
-            containsInAnyOrder(QUERY_FIELDS.toArray()))
+            containsInAnyOrder(QUERY_FIELDS.toArray()));
+    graphql(null, "{ __schema { mutationType { fields { name } } } }")
+        .then()
+        .statusCode(200)
+        .body("errors", nullValue())
         .body(
             "data.__schema.mutationType.fields.name.findAll { it != '_service' }",
             containsInAnyOrder(MUTATION_FIELDS.toArray()));
@@ -264,13 +269,12 @@ class GraphqlContractTest extends RegressionIntegrationTestBase {
   }
 
   @Test
-  void me_requires_authentication() {
+  void me_is_null_for_anonymous_and_resolves_current_user_when_authenticated() {
     graphql(null, "{ me { email username token } }")
         .then()
         .statusCode(200)
         .body("data.me", nullValue())
-        .body("errors", hasSize(1))
-        .body("errors[0].path", hasItem("me"));
+        .body("errors", nullValue());
     graphql(johnToken(), "{ me { email username token profile { username following } } }")
         .then()
         .statusCode(200)

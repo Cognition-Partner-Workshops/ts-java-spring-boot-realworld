@@ -25,7 +25,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /** Verifies that repository writes participate in Spring-managed transactions and roll back. */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 class RepositoryTransactionRollbackTest {
 
   @DynamicPropertySource

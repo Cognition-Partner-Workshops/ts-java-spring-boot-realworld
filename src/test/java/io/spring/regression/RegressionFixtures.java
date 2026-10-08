@@ -5,9 +5,8 @@ import io.spring.application.data.CommentData;
 import io.spring.application.data.ProfileData;
 import io.spring.core.article.Article;
 import io.spring.core.user.User;
+import java.time.Instant;
 import java.util.Arrays;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 
 /**
  * Centralises every timestamp construction used by the regression suite so the Joda -> java.time
@@ -16,16 +15,16 @@ import org.joda.time.DateTimeZone;
 public final class RegressionFixtures {
   private RegressionFixtures() {}
 
-  public static DateTime now() {
-    return new DateTime(DateTimeZone.UTC);
+  public static Instant now() {
+    return Instant.now();
   }
 
-  public static DateTime atMillis(long millis) {
-    return new DateTime(millis, DateTimeZone.UTC);
+  public static Instant atMillis(long millis) {
+    return Instant.ofEpochMilli(millis);
   }
 
-  public static long millisOf(DateTime dateTime) {
-    return dateTime.getMillis();
+  public static long millisOf(Instant instant) {
+    return instant.toEpochMilli();
   }
 
   public static User user(String seed) {
@@ -58,7 +57,7 @@ public final class RegressionFixtures {
   }
 
   public static CommentData commentData(String id, String articleId, User author) {
-    DateTime t = now();
+    Instant t = now();
     return new CommentData(id, "comment " + id, articleId, t, t, profile(author, false));
   }
 }
