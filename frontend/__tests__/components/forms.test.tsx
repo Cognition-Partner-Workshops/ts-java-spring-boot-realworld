@@ -41,6 +41,22 @@ describe("LoginForm", () => {
     expect(JSON.parse(window.localStorage.getItem("user") ?? "{}")).toEqual(currentUser);
   });
 
+  it("shows a backend message when the response has no errors map", async () => {
+    const user = userEvent.setup();
+    vi.mocked(axios.post).mockRejectedValue(
+      rejectWith(422, { message: "invalid email or password" })
+    );
+    renderWithProviders(<LoginForm />);
+    await user.type(screen.getByPlaceholderText("Email"), "x@y.z");
+    await user.type(screen.getByPlaceholderText("Password"), "wrong");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+
+    const item = await screen.findByText("invalid email or password");
+    expect(item).toBeInTheDocument();
+    expect(item.textContent?.trim()).toBe("invalid email or password");
+    expect(Router.push).not.toHaveBeenCalled();
+  });
+
   it("shows API errors", async () => {
     const user = userEvent.setup();
     vi.mocked(axios.post).mockRejectedValue(

@@ -7,6 +7,8 @@ import TagInput from "../../components/editor/TagInput";
 import ArticleAPI from "../../lib/api/article";
 import storage from "../../lib/utils/storage";
 import editorReducer, { EditorState } from "../../lib/utils/editorReducer";
+import toErrorMap from "../../lib/utils/errors";
+import invalidateArticles from "../../lib/utils/invalidateArticles";
 
 const PublishArticleEditor = () => {
   const initialState: EditorState = {
@@ -42,10 +44,11 @@ const PublishArticleEditor = () => {
     setLoading(false);
 
     if (status !== 200 && status !== 201) {
-      setErrors(data?.errors ?? {});
+      setErrors(toErrorMap(data));
       return;
     }
 
+    await invalidateArticles();
     Router.push("/");
   };
 

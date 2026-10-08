@@ -1,14 +1,14 @@
 import Router, { useRouter } from "next/router";
 import React from "react";
-import useSWR, { mutate } from "swr";
+import useSWR from "swr";
 
 import CustomLink from "../common/CustomLink";
 import checkLogin from "../../lib/utils/checkLogin";
 import ArticleAPI from "../../lib/api/article";
-import { SERVER_BASE_URL } from "../../lib/utils/constant";
 import storage from "../../lib/utils/storage";
 import Maybe from "../common/Maybe";
 import { ArticleType } from "../../lib/types/articleType";
+import invalidateArticles from "../../lib/utils/invalidateArticles";
 
 interface ArticleActionsProps {
   article: ArticleType;
@@ -30,7 +30,7 @@ const ArticleActions = ({ article }: ArticleActionsProps) => {
     if (!result) return;
 
     await ArticleAPI.delete(pid, currentUser?.token);
-    mutate(`${SERVER_BASE_URL}/articles/${pid}`);
+    await invalidateArticles();
     Router.push(`/`);
   };
 

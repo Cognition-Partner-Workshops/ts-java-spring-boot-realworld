@@ -4,6 +4,7 @@ import { mutate } from "swr";
 
 import ListErrors, { ErrorMap } from "../common/ListErrors";
 import UserAPI from "../../lib/api/user";
+import toErrorMap from "../../lib/utils/errors";
 
 const RegisterForm = () => {
   const [isLoading, setLoading] = React.useState(false);
@@ -35,8 +36,8 @@ const RegisterForm = () => {
         email,
         password
       );
-      if (status !== 200 && data?.errors) {
-        setErrors(data.errors);
+      if (status !== 200) {
+        setErrors(toErrorMap(data));
       }
       if (data?.user) {
         window.localStorage.setItem("user", JSON.stringify(data.user));

@@ -7,6 +7,7 @@ import ListErrors, { ErrorMap } from "../common/ListErrors";
 import checkLogin from "../../lib/utils/checkLogin";
 import { SERVER_BASE_URL } from "../../lib/utils/constant";
 import storage from "../../lib/utils/storage";
+import toErrorMap from "../../lib/utils/errors";
 
 interface UserInfo {
   image: string;
@@ -72,7 +73,7 @@ const SettingsForm = () => {
       );
 
       if (status !== 200) {
-        setErrors(data?.errors?.body ?? data?.errors ?? {});
+        setErrors(data?.errors?.body ?? toErrorMap(data));
       }
 
       if (data?.user) {

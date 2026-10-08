@@ -4,6 +4,7 @@ import { mutate } from "swr";
 
 import ListErrors, { ErrorMap } from "../common/ListErrors";
 import UserAPI from "../../lib/api/user";
+import toErrorMap from "../../lib/utils/errors";
 
 const LoginForm = () => {
   const [isLoading, setLoading] = React.useState(false);
@@ -27,7 +28,7 @@ const LoginForm = () => {
     try {
       const { data, status } = await UserAPI.login(email, password);
       if (status !== 200) {
-        setErrors(data?.errors ?? {});
+        setErrors(toErrorMap(data));
       }
 
       if (data?.user) {

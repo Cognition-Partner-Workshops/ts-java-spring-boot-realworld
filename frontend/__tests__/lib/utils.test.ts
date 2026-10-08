@@ -131,3 +131,30 @@ describe("handleBrokenImage", () => {
     expect(img.onerror).toBeNull();
   });
 });
+
+describe("toErrorMap", () => {
+  it("prefers the errors map, falls back to message, else empty", async () => {
+    const { toErrorMap, MESSAGE_KEY } = await import("../../lib/utils/errors");
+    expect(toErrorMap({ errors: { email: ["is invalid"] } })).toEqual({ email: ["is invalid"] });
+    expect(toErrorMap({ errors: {}, message: "nope" })).toEqual({ [MESSAGE_KEY]: ["nope"] });
+    expect(toErrorMap({ message: "invalid email or password" })).toEqual({
+      [MESSAGE_KEY]: ["invalid email or password"],
+    });
+    expect(toErrorMap(undefined)).toEqual({});
+    expect(toErrorMap("oops")).toEqual({});
+    expect(toErrorMap({})).toEqual({});
+  });
+});
+
+describe("invalidateArticles", () => {
+  it("matches only article cache keys", async () => {
+    const { isArticleKey } = await import("../../lib/utils/invalidateArticles");
+    const { SERVER_BASE_URL } = await import("../../lib/utils/constant");
+    expect(isArticleKey(`${SERVER_BASE_URL}/articles?offset=0`)).toBe(true);
+    expect(isArticleKey(`${SERVER_BASE_URL}/articles/some-slug`)).toBe(true);
+    expect(isArticleKey(`${SERVER_BASE_URL}/articles/some-slug/comments`)).toBe(true);
+    expect(isArticleKey(`${SERVER_BASE_URL}/tags`)).toBe(false);
+    expect(isArticleKey("user")).toBe(false);
+    expect(isArticleKey(undefined)).toBe(false);
+  });
+});

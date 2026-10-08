@@ -9,6 +9,8 @@ import ArticleAPI from "../../lib/api/article";
 import { ArticleType } from "../../lib/types/articleType";
 import { SERVER_BASE_URL } from "../../lib/utils/constant";
 import editorReducer, { EditorState } from "../../lib/utils/editorReducer";
+import toErrorMap from "../../lib/utils/errors";
+import invalidateArticles from "../../lib/utils/invalidateArticles";
 import storage from "../../lib/utils/storage";
 
 interface UpdateArticleEditorProps {
@@ -61,10 +63,11 @@ const UpdateArticleEditor = ({
     setLoading(false);
 
     if (status !== 200) {
-      setErrors(data?.errors ?? {});
+      setErrors(toErrorMap(data));
       return;
     }
 
+    await invalidateArticles();
     Router.push(`/`);
   };
 
