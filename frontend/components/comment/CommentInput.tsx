@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useRouter } from "next/router";
 import React from "react";
-import useSWR, { trigger } from "swr";
+import useSWR, { mutate } from "swr";
 
 import CustomImage from "../common/CustomImage";
 import CustomLink from "../common/CustomLink";
@@ -20,30 +20,38 @@ const CommentInput = () => {
   const [content, setContent] = React.useState("");
   const [isLoading, setLoading] = React.useState(false);
 
-  const handleChange = React.useCallback((e) => {
-    setContent(e.target.value);
-  }, []);
+  const handleChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setContent(e.target.value);
+    },
+    []
+  );
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    await axios.post(
-      `${SERVER_BASE_URL}/articles/${encodeURIComponent(String(pid))}/comments`,
-      JSON.stringify({
-        comment: {
-          body: content,
-        },
-      }),
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Token ${encodeURIComponent(currentUser?.token)}`,
-        },
-      }
-    );
-    setLoading(false);
-    setContent("");
-    trigger(`${SERVER_BASE_URL}/articles/${pid}/comments`);
+    try {
+      await axios.post(
+        `${SERVER_BASE_URL}/articles/${encodeURIComponent(
+          String(pid)
+        )}/comments`,
+        JSON.stringify({
+          comment: {
+            body: content,
+          },
+        }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${encodeURIComponent(currentUser?.token)}`,
+          },
+        }
+      );
+      setContent("");
+      mutate(`${SERVER_BASE_URL}/articles/${pid}/comments`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isLoggedIn) {

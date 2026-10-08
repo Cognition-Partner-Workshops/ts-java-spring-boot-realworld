@@ -6,9 +6,9 @@ description: How to run and E2E-test the RealWorld app (Spring Boot backend + Ne
 # Full-stack E2E testing of ts-java-spring-boot-realworld
 
 ## Running the app
-- Backend MUST run on Java 11. If the shell's default `java` is 17/21, `./gradlew bootRun` fails during `:compileJava` with a Lombok error (`NoSuchFieldError: JCTree$JCImport ... qualid`). Fix: `JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 ./gradlew bootRun`. The blueprint sets Java 11 via update-alternatives/$ENVRC, but fresh shells may still default to a newer JDK — always export JAVA_HOME explicitly.
+- Backend runs on Java 21 (Gradle toolchain in `build.gradle`, `.java-version` = 21). If the shell's default `java` is older, Gradle still resolves the 21 toolchain from `/usr/lib/jvm/java-21-openjdk-amd64`; when in doubt: `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew bootRun`. Java 11 no longer compiles the project (Spring Boot 3.5 / jakarta).
 - Backend listens on :8080 and recreates SQLite `dev.db` with seed data (users janedoe/bobsmith/johndoe, several articles) on every bootRun. Ready when `curl http://localhost:8080/tags` returns JSON (startup can take ~1–2 min).
-- Frontend: `cd frontend && NODE_OPTIONS=--openssl-legacy-provider npm run dev` → http://localhost:3000 (talks to :8080 via `frontend/lib/utils/constant.ts`). The openssl-legacy-provider flag is required on Node 18+.
+- Frontend: `source ~/.nvm/nvm.sh && nvm use 22 && cd frontend && npm ci && npm run dev` → http://localhost:3000 (Next 15; talks to :8080 via `frontend/lib/utils/constant.ts`, override with `NEXT_PUBLIC_API_URL`). Node 22 LTS is required (`frontend/.nvmrc`); `--openssl-legacy-provider` is no longer needed.
 
 ## Auth
 - No seed-user password known; the comment box on `/article/<slug>` only renders when logged in. Since the DB is wiped each bootRun, register a fresh user at http://localhost:3000/user/register (any username/email/password) — registration auto-logs you in.

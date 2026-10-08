@@ -1,5 +1,10 @@
 import React from "react";
 
-const Maybe = ({ test, children }) => <>{test && children}</>;
+interface MaybeProps {
+  test: unknown;
+  children: React.ReactNode;
+}
+
+const Maybe = ({ test, children }: MaybeProps) => <>{test ? children : null}</>;
 
 export default Maybe;

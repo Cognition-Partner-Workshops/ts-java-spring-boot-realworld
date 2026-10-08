@@ -3,15 +3,24 @@ import Router, { useRouter } from "next/router";
 import React from "react";
 import useSWR from "swr";
 
-import ListErrors from "../../components/common/ListErrors";
+import ListErrors, { ErrorMap } from "../../components/common/ListErrors";
 import TagInput from "../../components/editor/TagInput";
 import ArticleAPI from "../../lib/api/article";
+import { ArticleType } from "../../lib/types/articleType";
 import { SERVER_BASE_URL } from "../../lib/utils/constant";
-import editorReducer from "../../lib/utils/editorReducer";
+import editorReducer, { EditorState } from "../../lib/utils/editorReducer";
+import toErrorMap from "../../lib/utils/errors";
+import invalidateArticles from "../../lib/utils/invalidateArticles";
 import storage from "../../lib/utils/storage";
 
-const UpdateArticleEditor = ({ article: initialArticle }) => {
-  const initialState = {
+interface UpdateArticleEditorProps {
+  article: ArticleType;
+}
+
+const UpdateArticleEditor = ({
+  article: initialArticle,
+}: UpdateArticleEditorProps) => {
+  const initialState: EditorState = {
     title: initialArticle.title,
     description: initialArticle.description,
     body: initialArticle.body,
@@ -19,7 +28,7 @@ const UpdateArticleEditor = ({ article: initialArticle }) => {
   };
 
   const [isLoading, setLoading] = React.useState(false);
-  const [errors, setErrors] = React.useState([]);
+  const [errors, setErrors] = React.useState<ErrorMap>({});
   const [posting, dispatch] = React.useReducer(editorReducer, initialState);
   const { data: currentUser } = useSWR("user", storage);
   const router = useRouter();
@@ -27,16 +36,16 @@ const UpdateArticleEditor = ({ article: initialArticle }) => {
     query: { pid },
   } = router;
 
-  const handleTitle = (e) =>
+  const handleTitle = (e: React.ChangeEvent<HTMLInputElement>) =>
     dispatch({ type: "SET_TITLE", text: e.target.value });
-  const handleDescription = (e) =>
+  const handleDescription = (e: React.ChangeEvent<HTMLInputElement>) =>
     dispatch({ type: "SET_DESCRIPTION", text: e.target.value });
-  const handleBody = (e) =>
+  const handleBody = (e: React.ChangeEvent<HTMLTextAreaElement>) =>
     dispatch({ type: "SET_BODY", text: e.target.value });
-  const addTag = (tag) => dispatch({ type: "ADD_TAG", tag: tag });
-  const removeTag = (tag) => dispatch({ type: "REMOVE_TAG", tag: tag });
+  const addTag = (tag: string) => dispatch({ type: "ADD_TAG", tag });
+  const removeTag = (tag: string) => dispatch({ type: "REMOVE_TAG", tag });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setLoading(true);
 
@@ -48,14 +57,17 @@ const UpdateArticleEditor = ({ article: initialArticle }) => {
           "Content-Type": "application/json",
           Authorization: `Token ${encodeURIComponent(currentUser?.token)}`,
         },
+        validateStatus: () => true,
       }
     );
     setLoading(false);
 
     if (status !== 200) {
-      setErrors(data.errors);
+      setErrors(toErrorMap(data));
+      return;
     }
 
+    await invalidateArticles();
     Router.push(`/`);
   };
 
@@ -121,7 +133,11 @@ const UpdateArticleEditor = ({ article: initialArticle }) => {
   );
 };
 
-UpdateArticleEditor.getInitialProps = async ({ query: { pid } }) => {
+UpdateArticleEditor.getInitialProps = async ({
+  query: { pid },
+}: {
+  query: { pid?: string | string[] };
+}) => {
   const {
     data: { article },
   } = await ArticleAPI.get(pid);

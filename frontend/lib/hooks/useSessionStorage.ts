@@ -1,17 +1,22 @@
 import React from "react";
 
-const useSessionStorage = (key, initialValue) => {
-  const [storedValue, setStoredValue] = React.useState(() => {
+type SetValue<T> = (value: T | ((previous: T) => T)) => void;
+
+const useSessionStorage = <T,>(
+  key: string,
+  initialValue: T
+): [T, SetValue<T>] => {
+  const [storedValue, setStoredValue] = React.useState<T>(() => {
     if (typeof window !== "undefined") {
       const item = window.sessionStorage.getItem(key);
-      return !!item ? JSON.parse(item) : initialValue;
-    } else {
-      return initialValue;
+      return item ? (JSON.parse(item) as T) : initialValue;
     }
+    return initialValue;
   });
 
-  const setValue = (value) => {
-    const valueToStore = value instanceof Function ? value(storedValue) : value;
+  const setValue: SetValue<T> = (value) => {
+    const valueToStore =
+      value instanceof Function ? value(storedValue) : value;
     setStoredValue(valueToStore);
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(key, JSON.stringify(valueToStore));

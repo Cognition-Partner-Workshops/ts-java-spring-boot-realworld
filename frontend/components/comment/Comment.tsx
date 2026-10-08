@@ -5,10 +5,15 @@ import CustomLink from "../common/CustomLink";
 import CustomImage from "../common/CustomImage";
 import Maybe from "../common/Maybe";
 import DeleteButton from "./DeleteButton";
+import { CommentType } from "../../lib/types/commentType";
 import checkLogin from "../../lib/utils/checkLogin";
 import storage from "../../lib/utils/storage";
 
-const Comment = ({ comment }) => {
+interface CommentProps {
+  comment: CommentType;
+}
+
+const Comment = ({ comment }: CommentProps) => {
   const { data: currentUser } = useSWR("user", storage);
   const isLoggedIn = checkLogin(currentUser);
   const canModify =
@@ -21,7 +26,7 @@ const Comment = ({ comment }) => {
       </div>
       <div className="card-footer">
         <CustomLink
-          href="profile/[pid]"
+          href="/profile/[pid]"
           as={`/profile/${comment.author.username}`}
           className="comment-author"
         >
@@ -33,7 +38,7 @@ const Comment = ({ comment }) => {
         </CustomLink>
         &nbsp;
         <CustomLink
-          href="profile/[pid]"
+          href="/profile/[pid]"
           as={`/profile/${comment.author.username}`}
           className="comment-author"
         >

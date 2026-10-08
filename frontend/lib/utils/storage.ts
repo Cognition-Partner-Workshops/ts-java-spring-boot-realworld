@@ -1,6 +1,7 @@
-const storage = async key => {
-  const value = localStorage.getItem(key);
-  return !!value ? JSON.parse(value) : undefined;
+const storage = async (key: string) => {
+  if (typeof window === "undefined") return undefined;
+  const value = window.localStorage.getItem(key);
+  return value ? JSON.parse(value) : undefined;
 };
 
 export default storage;

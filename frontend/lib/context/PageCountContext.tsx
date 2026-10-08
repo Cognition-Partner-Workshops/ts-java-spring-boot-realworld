@@ -1,6 +1,6 @@
 import React from "react";
 
-export type PageCountDispatch = React.Dispatch<any>;
+export type PageCountDispatch = React.Dispatch<React.SetStateAction<number>>;
 
 interface Props {
   children: React.ReactNode;

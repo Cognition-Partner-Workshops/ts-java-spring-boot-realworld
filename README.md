@@ -64,7 +64,7 @@ The application includes seed data with sample users, articles, tags, comments, 
 
 ## Backend (Spring Boot)
 
-You'll need Java 11 installed.
+You'll need **Java 21** installed (the build uses a Gradle Java toolchain pinned to 21; `.java-version` is set to `21` for `jenv`/`asdf`/`sdkman` users). The project targets Spring Boot 3.5.x and uses the bundled Gradle 8.14 wrapper, so no local Gradle install is required.
 
     ./gradlew bootRun
 
@@ -77,7 +77,7 @@ Alternatively, you can run
 
 ## Frontend (Next.js)
 
-You'll need Node.js installed. **Recommended: Node v14-16** (specified in `frontend/.nvmrc`).
+You'll need Node.js installed. **Required: Node 22 LTS / npm 10** (see `frontend/.nvmrc` and `engines` in `frontend/package.json`).
 
 If using `nvm`, switch to the correct version:
 ```bash
@@ -93,7 +93,7 @@ npm run dev
 
 The frontend will run on http://localhost:3000 and connect to the backend on port 8080.
 
-**Note**: The `npm run dev` script includes `NODE_OPTIONS=--openssl-legacy-provider` for compatibility with newer Node versions, but Node 14-16 is still recommended for best compatibility.
+The frontend quality gate mirrors CI: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
 
 # Try it out with [Docker](https://www.docker.com/)
 
@@ -111,6 +111,14 @@ The entry point address of the backend API is at http://localhost:8080, **not** 
 The repository contains a lot of test cases to cover both api test and repository test.
 
     ./gradlew test
+
+The full CI gate (tests, Spotless format check, JaCoCo report and the 80% instruction-coverage verification) is:
+
+    ./gradlew clean test spotlessCheck jacocoTestReport jacocoTestCoverageVerification
+
+Selenium end-to-end tests (TestNG) are run separately against a running backend + frontend:
+
+    ./gradlew seleniumTest
 
 # Code format
 
