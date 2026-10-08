@@ -31,7 +31,7 @@ const ArticleList = () => {
 
   const { vw } = useViewport();
   const router = useRouter();
-  const { asPath, pathname, query } = router;
+  const { pathname, query } = router;
   const { favorite, follow, tag, pid } = query;
 
   const isProfilePage = pathname.startsWith(`/profile`);
@@ -40,9 +40,9 @@ const ArticleList = () => {
 
   switch (true) {
     case !!tag:
-      fetchURL = `${SERVER_BASE_URL}/articles${asPath}&offset=${
-        page * DEFAULT_LIMIT
-      }`;
+      fetchURL = `${SERVER_BASE_URL}/articles?tag=${encodeURIComponent(
+        String(tag)
+      )}&offset=${page * DEFAULT_LIMIT}`;
       break;
     case isProfilePage && !!favorite:
       fetchURL = `${SERVER_BASE_URL}/articles?favorited=${encodeURIComponent(

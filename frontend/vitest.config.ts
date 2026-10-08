@@ -1,9 +1,8 @@
-import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
+  plugins: [tsconfigPaths()],
   test: {
     environment: "jsdom",
     globals: true,
@@ -18,10 +17,10 @@ export default defineConfig({
       include: ["components/**", "lib/**", "pages/**"],
       exclude: ["pages/_document.tsx", "**/*.d.ts"],
       thresholds: {
-        statements: 70,
-        branches: 60,
-        functions: 65,
-        lines: 70,
+        statements: 85,
+        branches: 80,
+        functions: 80,
+        lines: 85,
       },
     },
   },
