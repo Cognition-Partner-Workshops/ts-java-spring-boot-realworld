@@ -26,17 +26,18 @@ public class MeDatafetcher {
 
   @DgsData(parentType = DgsConstants.QUERY_TYPE, field = QUERY.Me)
   public DataFetcherResult<User> getMe(
-      @RequestHeader(value = "Authorization") String authorization,
+      @RequestHeader(value = "Authorization", required = false) String authorization,
       DataFetchingEnvironment dataFetchingEnvironment) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication instanceof AnonymousAuthenticationToken
+    if (authentication == null
+        || authentication instanceof AnonymousAuthenticationToken
         || authentication.getPrincipal() == null) {
       return null;
     }
     io.spring.core.user.User user = (io.spring.core.user.User) authentication.getPrincipal();
     UserData userData =
         userQueryService.findById(user.getId()).orElseThrow(ResourceNotFoundException::new);
-    UserWithToken userWithToken = new UserWithToken(userData, authorization.split(" ")[1]);
+    UserWithToken userWithToken = new UserWithToken(userData, tokenFrom(authorization, user));
     User result =
         User.newBuilder()
             .email(userWithToken.getEmail())
@@ -44,6 +45,16 @@ public class MeDatafetcher {
             .token(userWithToken.getToken())
             .build();
     return DataFetcherResult.<User>newResult().data(result).localContext(user).build();
+  }
+
+  private String tokenFrom(String authorization, io.spring.core.user.User user) {
+    if (authorization != null) {
+      String[] parts = authorization.trim().split("\\s+");
+      if (parts.length >= 2) {
+        return parts[1];
+      }
+    }
+    return jwtService.toToken(user);
   }
 
   @DgsData(parentType = USERPAYLOAD.TYPE_NAME, field = USERPAYLOAD.User)
