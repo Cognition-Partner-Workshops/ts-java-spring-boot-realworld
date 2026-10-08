@@ -1,23 +1,27 @@
-import axios from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 
-const updateOptions = () => {
+const updateOptions = (): AxiosRequestConfig => {
   if (typeof window === "undefined") return {};
 
-  if (!window.localStorage.user) return {};
+  const rawUser = window.localStorage.getItem("user");
+  if (!rawUser) return {};
 
-  if (Object.keys(window.localStorage.user).length === 0) return {};
-
-  const user = JSON.parse(window.localStorage.user);
-
-  if (!!user.token) {
-    return {
-      headers: {
-        Authorization: `Token ${user.token}`,
-      },
-    };
+  try {
+    const user = JSON.parse(rawUser);
+    if (user?.token) {
+      return {
+        headers: {
+          Authorization: `Token ${user.token}`,
+        },
+      };
+    }
+  } catch {
+    return {};
   }
+  return {};
 };
-export default async function (url) {
-  const { data } = await axios.get(url, updateOptions());
+
+export default async function fetcher<T = unknown>(url: string): Promise<T> {
+  const { data } = await axios.get<T>(url, updateOptions());
   return data;
 }

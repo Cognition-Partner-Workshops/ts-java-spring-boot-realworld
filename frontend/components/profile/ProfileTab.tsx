@@ -3,7 +3,11 @@ import React from "react";
 import NavLink from "../common/NavLink";
 import { usePageDispatch } from "../../lib/context/PageContext";
 
-const ProfileTab = ({ profile }) => {
+interface ProfileTabProps {
+  profile: { username: string };
+}
+
+const ProfileTab = ({ profile }: ProfileTabProps) => {
   const setPage = usePageDispatch();
   return (
     <ul className="nav nav-pills outline-active">
@@ -12,7 +16,7 @@ const ProfileTab = ({ profile }) => {
           href="/profile/[pid]"
           as={`/profile/${encodeURIComponent(profile.username)}`}
         >
-          <span onClick={() => setPage(0)}>My Articles</span>
+          <span onClick={() => setPage?.(0)}>My Articles</span>
         </NavLink>
       </li>
       <li className="nav-item">
@@ -20,7 +24,7 @@ const ProfileTab = ({ profile }) => {
           href="/profile/[pid]?favorite=true"
           as={`/profile/${encodeURIComponent(profile.username)}?favorite=true`}
         >
-          <span onClick={() => setPage(0)}>Favorited Articles</span>
+          <span onClick={() => setPage?.(0)}>Favorited Articles</span>
         </NavLink>
       </li>
     </ul>

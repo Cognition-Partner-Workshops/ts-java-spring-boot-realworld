@@ -2,32 +2,33 @@ import Router from "next/router";
 import React from "react";
 import { mutate } from "swr";
 
-import ListErrors from "../common/ListErrors";
+import ListErrors, { ErrorMap } from "../common/ListErrors";
 import UserAPI from "../../lib/api/user";
+import toErrorMap from "../../lib/utils/errors";
 
 const LoginForm = () => {
   const [isLoading, setLoading] = React.useState(false);
-  const [errors, setErrors] = React.useState([]);
+  const [errors, setErrors] = React.useState<ErrorMap>({});
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
 
   const handleEmailChange = React.useCallback(
-    (e) => setEmail(e.target.value),
+    (e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value),
     []
   );
   const handlePasswordChange = React.useCallback(
-    (e) => setPassword(e.target.value),
+    (e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value),
     []
   );
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const { data, status } = await UserAPI.login(email, password);
       if (status !== 200) {
-        setErrors(data.errors);
+        setErrors(toErrorMap(data));
       }
 
       if (data?.user) {

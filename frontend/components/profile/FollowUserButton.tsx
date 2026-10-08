@@ -1,19 +1,31 @@
 import React from "react";
 
+interface FollowUserButtonProps {
+  isUser: boolean;
+  following: boolean;
+  username: string;
+  follow: (username: string) => void;
+  unfollow: (username: string) => void;
+}
+
 const FollowUserButton = ({
   isUser,
   following,
   username,
   follow,
   unfollow,
-}) => {
+}: FollowUserButtonProps) => {
   if (isUser) {
     return null;
   }
 
-  const handleClick = (e) => {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    following ? unfollow(username) : follow(username);
+    if (following) {
+      unfollow(username);
+    } else {
+      follow(username);
+    }
   };
 
   return (

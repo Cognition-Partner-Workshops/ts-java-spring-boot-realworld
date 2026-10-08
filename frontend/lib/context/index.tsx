@@ -3,7 +3,11 @@ import React from "react";
 import PageContext from "./PageContext";
 import PageCountContext from "./PageCountContext";
 
-const ContextProvider = ({ children }) => (
+interface Props {
+  children: React.ReactNode;
+}
+
+const ContextProvider = ({ children }: Props) => (
   <PageContext>
     <PageCountContext>{children}</PageCountContext>
   </PageContext>

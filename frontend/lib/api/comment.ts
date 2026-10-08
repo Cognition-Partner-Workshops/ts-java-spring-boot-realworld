@@ -1,9 +1,15 @@
-import axios from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 
 import { SERVER_BASE_URL } from "../utils/constant";
 
+const errorResponse = (error: unknown): AxiosResponse => {
+  const response = (error as AxiosError).response;
+  if (response) return response;
+  throw error;
+};
+
 const CommentAPI = {
-  create: async (slug, comment) => {
+  create: async (slug: string, comment: { body: string }) => {
     try {
       const response = await axios.post(
         `${SERVER_BASE_URL}/articles/${slug}/comments`,
@@ -11,21 +17,21 @@ const CommentAPI = {
       );
       return response;
     } catch (error) {
-      return error.response;
+      return errorResponse(error);
     }
   },
-  delete: async (slug, commentId) => {
+  delete: async (slug: string, commentId: string) => {
     try {
       const response = await axios.delete(
         `${SERVER_BASE_URL}/articles/${slug}/comments/${commentId}`
       );
       return response;
     } catch (error) {
-      return error.response;
+      return errorResponse(error);
     }
   },
 
-  forArticle: (slug) =>
+  forArticle: (slug: string) =>
     axios.get(`${SERVER_BASE_URL}/articles/${slug}/comments`),
 };
 

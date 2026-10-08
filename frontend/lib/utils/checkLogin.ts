@@ -1,6 +1,7 @@
-const checkLogin = (currentUser) =>
+const checkLogin = (currentUser: unknown): boolean =>
   !!currentUser &&
-  currentUser?.constructor === Object &&
-  Object.keys(currentUser).length !== 0;
+  typeof currentUser === "object" &&
+  (currentUser as object).constructor === Object &&
+  Object.keys(currentUser as object).length !== 0;
 
 export default checkLogin;

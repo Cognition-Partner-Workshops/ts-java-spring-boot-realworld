@@ -1,5 +1,5 @@
 import React from "react";
-import { trigger } from "swr";
+import { mutate } from "swr";
 
 import { getRange, getPageInfo } from "../../lib/utils/calculatePagination";
 import { usePageDispatch, usePageState } from "../../lib/context/PageContext";
@@ -22,7 +22,7 @@ const Pagination = ({
   lastIndex,
   fetchURL,
 }: PaginationProps) => {
-  const page = usePageState();
+  const page = usePageState() ?? 0;
   const setPage = usePageDispatch();
 
   const { firstPage, lastPage, hasPreviousPage, hasNextPage } = getPageInfo({
@@ -33,81 +33,47 @@ const Pagination = ({
   });
   const pages = total > 0 ? getRange(firstPage, lastPage) : [];
 
-  const handleClick = React.useCallback(
+  const goTo = React.useCallback(
     (e: React.MouseEvent<HTMLLIElement, MouseEvent>, index: number) => {
       e.preventDefault();
-      setPage(index);
-      trigger(fetchURL);
+      setPage?.(index);
+      mutate(fetchURL);
     },
-    []
-  );
-
-  const handleFirstClick = React.useCallback(
-    (e: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
-      e.preventDefault();
-      setPage(0);
-      trigger(fetchURL);
-    },
-    []
-  );
-
-  const handlePrevClick = React.useCallback(
-    (e: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
-      e.preventDefault();
-      setPage(page - 1);
-      trigger(fetchURL);
-    },
-    []
-  );
-
-  const handleNextClick = React.useCallback(
-    (e: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
-      e.preventDefault();
-      setPage(page + 1);
-      trigger(fetchURL);
-    },
-    []
-  );
-
-  const handleLastClick = React.useCallback(
-    (e: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
-      e.preventDefault();
-      setPage(lastIndex);
-      trigger(fetchURL);
-    },
-    []
+    [setPage, fetchURL]
   );
 
   return (
     <nav>
       <ul className="pagination">
-        <li className="page-item" onClick={handleFirstClick}>
+        <li className="page-item" onClick={(e) => goTo(e, 0)}>
           <a className="page-link">{`<<`}</a>
         </li>
         <Maybe test={hasPreviousPage}>
-          <li className="page-item" onClick={handlePrevClick}>
+          <li className="page-item" onClick={(e) => goTo(e, page - 1)}>
             <a className="page-link">{`<`}</a>
           </li>
         </Maybe>
 
-        {pages.map((page) => {
-          const isCurrent = !currentPage ? page === 0 : page === currentPage;
+        {pages.map((pageNumber) => {
+          const isCurrent = !currentPage
+            ? pageNumber === 0
+            : pageNumber === currentPage;
           return (
             <li
-              key={page.toString()}
+              key={pageNumber.toString()}
               className={isCurrent ? "page-item active" : "page-item"}
-              onClick={(e) => handleClick(e, page)}
+              onClick={(e) => goTo(e, pageNumber)}
             >
-              <a className="page-link">{page + 1}</a>
+              <a className="page-link">{pageNumber + 1}</a>
             </li>
           );
         })}
         <Maybe test={hasNextPage}>
-          <li className="page-item" onClick={handleNextClick}>
+          <li className="page-item" onClick={(e) => goTo(e, page + 1)}>
             <a className="page-link">{`>`}</a>
           </li>
         </Maybe>
-        <li className="page-item" onClick={handleLastClick}>
+        <li className="page-item" onClick={(e) => goTo(e, lastIndex)}>
           <a className="page-link">{`>>`}</a>
         </li>
       </ul>

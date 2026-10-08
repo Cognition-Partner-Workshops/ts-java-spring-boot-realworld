@@ -2,7 +2,7 @@ import React from "react";
 
 import useSessionStorage from "../hooks/useSessionStorage";
 
-export type PageDispatch = React.Dispatch<any>;
+export type PageDispatch = (value: number | ((previous: number) => number)) => void;
 
 interface Props {
   children: React.ReactNode;
@@ -15,7 +15,7 @@ const PageDispatchContext = React.createContext<PageDispatch | undefined>(
 );
 
 const PageContextProvider = ({ children }: Props) => {
-  const [page, setPage] = useSessionStorage("offset", 0);
+  const [page, setPage] = useSessionStorage<number>("offset", 0);
   return (
     <PageDispatchContext.Provider value={setPage}>
       <PageStateContext.Provider value={page}>
