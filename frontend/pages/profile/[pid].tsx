@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import React from "react";
-import useSWR, { mutate, trigger } from "swr";
+import useSWR, { mutate } from "swr";
 
 import ArticleList from "../../components/article/ArticleList";
 import CustomImage from "../../components/common/CustomImage";
@@ -10,53 +10,63 @@ import EditProfileButton from "../../components/profile/EditProfileButton";
 import FollowUserButton from "../../components/profile/FollowUserButton";
 import ProfileTab from "../../components/profile/ProfileTab";
 import UserAPI from "../../lib/api/user";
+import { Author } from "../../lib/types/articleType";
 import checkLogin from "../../lib/utils/checkLogin";
 import { SERVER_BASE_URL } from "../../lib/utils/constant";
 import fetcher from "../../lib/utils/fetcher";
 import storage from "../../lib/utils/storage";
 
-const Profile = ({ initialProfile }) => {
+interface ProfileResponse {
+  profile: Author;
+}
+
+interface ProfileProps {
+  initialProfile: ProfileResponse;
+}
+
+const Profile = ({ initialProfile }: ProfileProps) => {
   const router = useRouter();
   const {
     query: { pid },
   } = router;
 
-  const {
-    data: fetchedProfile,
-    error: profileError,
-  } = useSWR(
-    `${SERVER_BASE_URL}/profiles/${encodeURIComponent(String(pid))}`,
+  const profileKey = `${SERVER_BASE_URL}/profiles/${encodeURIComponent(
+    String(pid)
+  )}`;
+
+  const { data: fetchedProfile, error: profileError } = useSWR<ProfileResponse>(
+    profileKey,
     fetcher,
-    { initialData: initialProfile }
+    { fallbackData: initialProfile }
   );
+  const { data: currentUser } = useSWR("user", storage);
 
   if (profileError) return <ErrorMessage message="Can't load profile" />;
 
   const { profile } = fetchedProfile || initialProfile;
   const { username, bio, image, following } = profile;
 
-  const { data: currentUser } = useSWR("user", storage);
   const isLoggedIn = checkLogin(currentUser);
-  const isUser = currentUser && username === currentUser?.username;
+  const isUser = !!currentUser && username === currentUser?.username;
 
   const handleFollow = async () => {
     mutate(
-      `${SERVER_BASE_URL}/profiles/${pid}`,
+      profileKey,
       { profile: { ...profile, following: true } },
-      false
+      { revalidate: false }
     );
-    UserAPI.follow(pid);
-    trigger(`${SERVER_BASE_URL}/profiles/${pid}`);
+    await UserAPI.follow(String(pid));
+    mutate(profileKey);
   };
 
   const handleUnfollow = async () => {
     mutate(
-      `${SERVER_BASE_URL}/profiles/${pid}`,
-      { profile: { ...profile, following: true } },
-      true
+      profileKey,
+      { profile: { ...profile, following: false } },
+      { revalidate: false }
     );
-    UserAPI.unfollow(pid);
-    trigger(`${SERVER_BASE_URL}/profiles/${pid}`);
+    await UserAPI.unfollow(String(pid));
+    mutate(profileKey);
   };
 
   return (
@@ -101,8 +111,12 @@ const Profile = ({ initialProfile }) => {
   );
 };
 
-Profile.getInitialProps = async ({ query: { pid } }) => {
-  const { data: initialProfile } = await UserAPI.get(pid);
+Profile.getInitialProps = async ({
+  query: { pid },
+}: {
+  query: { pid?: string | string[] };
+}) => {
+  const { data: initialProfile } = await UserAPI.get(String(pid));
   return { initialProfile };
 };
 

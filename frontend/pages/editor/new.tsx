@@ -2,14 +2,14 @@ import Router from "next/router";
 import React from "react";
 import useSWR from "swr";
 
-import ListErrors from "../../components/common/ListErrors";
+import ListErrors, { ErrorMap } from "../../components/common/ListErrors";
 import TagInput from "../../components/editor/TagInput";
 import ArticleAPI from "../../lib/api/article";
 import storage from "../../lib/utils/storage";
-import editorReducer from "../../lib/utils/editorReducer";
+import editorReducer, { EditorState } from "../../lib/utils/editorReducer";
 
 const PublishArticleEditor = () => {
-  const initialState = {
+  const initialState: EditorState = {
     title: "",
     description: "",
     body: "",
@@ -17,20 +17,20 @@ const PublishArticleEditor = () => {
   };
 
   const [isLoading, setLoading] = React.useState(false);
-  const [errors, setErrors] = React.useState([]);
+  const [errors, setErrors] = React.useState<ErrorMap>({});
   const [posting, dispatch] = React.useReducer(editorReducer, initialState);
   const { data: currentUser } = useSWR("user", storage);
 
-  const handleTitle = (e) =>
+  const handleTitle = (e: React.ChangeEvent<HTMLInputElement>) =>
     dispatch({ type: "SET_TITLE", text: e.target.value });
-  const handleDescription = (e) =>
+  const handleDescription = (e: React.ChangeEvent<HTMLInputElement>) =>
     dispatch({ type: "SET_DESCRIPTION", text: e.target.value });
-  const handleBody = (e) =>
+  const handleBody = (e: React.ChangeEvent<HTMLTextAreaElement>) =>
     dispatch({ type: "SET_BODY", text: e.target.value });
-  const addTag = (tag) => dispatch({ type: "ADD_TAG", tag: tag });
-  const removeTag = (tag) => dispatch({ type: "REMOVE_TAG", tag: tag });
+  const addTag = (tag: string) => dispatch({ type: "ADD_TAG", tag });
+  const removeTag = (tag: string) => dispatch({ type: "REMOVE_TAG", tag });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setLoading(true);
 
@@ -41,8 +41,9 @@ const PublishArticleEditor = () => {
 
     setLoading(false);
 
-    if (status !== 200) {
-      setErrors(data.errors);
+    if (status !== 200 && status !== 201) {
+      setErrors(data?.errors ?? {});
+      return;
     }
 
     Router.push("/");

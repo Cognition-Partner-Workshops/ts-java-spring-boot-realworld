@@ -1,6 +1,6 @@
 import Router, { useRouter } from "next/router";
 import React from "react";
-import useSWR, { trigger } from "swr";
+import useSWR, { mutate } from "swr";
 
 import CustomLink from "../common/CustomLink";
 import checkLogin from "../../lib/utils/checkLogin";
@@ -8,8 +8,13 @@ import ArticleAPI from "../../lib/api/article";
 import { SERVER_BASE_URL } from "../../lib/utils/constant";
 import storage from "../../lib/utils/storage";
 import Maybe from "../common/Maybe";
+import { ArticleType } from "../../lib/types/articleType";
 
-const ArticleActions = ({ article }) => {
+interface ArticleActionsProps {
+  article: ArticleType;
+}
+
+const ArticleActions = ({ article }: ArticleActionsProps) => {
   const { data: currentUser } = useSWR("user", storage);
   const isLoggedIn = checkLogin(currentUser);
   const router = useRouter();
@@ -25,7 +30,7 @@ const ArticleActions = ({ article }) => {
     if (!result) return;
 
     await ArticleAPI.delete(pid, currentUser?.token);
-    trigger(`${SERVER_BASE_URL}/articles/${pid}`);
+    mutate(`${SERVER_BASE_URL}/articles/${pid}`);
     Router.push(`/`);
   };
 

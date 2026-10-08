@@ -1,11 +1,18 @@
 import React from "react";
 
-const ListErrors = ({ errors }) => (
+export type ErrorMap = Record<string, string | string[]> | null | undefined;
+
+interface ListErrorsProps {
+  errors: ErrorMap;
+}
+
+const ListErrors = ({ errors }: ListErrorsProps) => (
   <ul className="error-messages">
-    {Object.keys(errors).map((key) => {
+    {Object.keys(errors ?? {}).map((key) => {
+      const value = errors![key];
       return (
         <li key={key}>
-          {key} {errors[key]}
+          {key} {Array.isArray(value) ? value.join(", ") : value}
         </li>
       );
     })}

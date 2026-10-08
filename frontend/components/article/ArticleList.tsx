@@ -13,12 +13,18 @@ import {
   usePageCountDispatch,
 } from "../../lib/context/PageCountContext";
 import useViewport from "../../lib/hooks/useViewport";
+import { ArticleType } from "../../lib/types/articleType";
 import { SERVER_BASE_URL, DEFAULT_LIMIT } from "../../lib/utils/constant";
 import fetcher from "../../lib/utils/fetcher";
 
+interface ArticlesResponse {
+  articles: ArticleType[];
+  articlesCount: number;
+}
+
 const ArticleList = () => {
-  const page = usePageState();
-  const pageCount = usePageCountState();
+  const page = usePageState() ?? 0;
+  const pageCount = usePageCountState() ?? 0;
   const setPageCount = usePageCountDispatch();
   const lastIndex =
     pageCount > 480 ? Math.ceil(pageCount / 20) : Math.ceil(pageCount / 20) - 1;
@@ -57,7 +63,14 @@ const ArticleList = () => {
       break;
   }
 
-  const { data, error } = useSWR(fetchURL, fetcher);
+  const { data, error } = useSWR<ArticlesResponse>(fetchURL, fetcher);
+  const articlesCount = data?.articlesCount;
+
+  React.useEffect(() => {
+    if (typeof articlesCount === "number") {
+      setPageCount?.(articlesCount);
+    }
+  }, [articlesCount, setPageCount]);
 
   if (error) {
     return (
@@ -72,8 +85,7 @@ const ArticleList = () => {
 
   if (!data) return <LoadingSpinner />;
 
-  const { articles, articlesCount } = data;
-  setPageCount(articlesCount);
+  const { articles } = data;
 
   if (articles && articles.length === 0) {
     return <div className="article-preview">No articles are here... yet.</div>;

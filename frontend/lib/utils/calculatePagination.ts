@@ -1,8 +1,15 @@
-export const getRange = (start, end) => {
+export const getRange = (start: number, end: number): number[] => {
   return [...Array(end - start + 1)].map((_, i) => start + i);
 };
 
-export const getPageInfo = ({ limit, pageCount, total, page }) => {
+interface PageInfoInput {
+  limit: number;
+  pageCount: number;
+  total: number;
+  page: number;
+}
+
+export const getPageInfo = ({ limit, pageCount, total, page }: PageInfoInput) => {
   const totalPages = Math.floor(total / limit);
 
   let currentPage = page;

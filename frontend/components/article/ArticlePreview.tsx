@@ -7,6 +7,7 @@ import useSWR from "swr";
 import CustomLink from "../common/CustomLink";
 import CustomImage from "../common/CustomImage";
 import { usePageDispatch } from "../../lib/context/PageContext";
+import { ArticleType } from "../../lib/types/articleType";
 import checkLogin from "../../lib/utils/checkLogin";
 import { SERVER_BASE_URL } from "../../lib/utils/constant";
 import storage from "../../lib/utils/storage";
@@ -14,7 +15,11 @@ import storage from "../../lib/utils/storage";
 const FAVORITED_CLASS = "btn btn-sm btn-primary";
 const NOT_FAVORITED_CLASS = "btn btn-sm btn-outline-primary";
 
-const ArticlePreview = ({ article }) => {
+interface ArticlePreviewProps {
+  article: ArticleType;
+}
+
+const ArticlePreview = ({ article }: ArticlePreviewProps) => {
   const setPage = usePageDispatch();
 
   const [preview, setPreview] = React.useState(article);
@@ -24,19 +29,22 @@ const ArticlePreview = ({ article }) => {
   const { data: currentUser } = useSWR("user", storage);
   const isLoggedIn = checkLogin(currentUser);
 
-  const handleClickFavorite = async (slug) => {
+  const toggleFavorite = (current: ArticleType): ArticleType => ({
+    ...current,
+    favorited: !current.favorited,
+    favoritesCount: current.favorited
+      ? current.favoritesCount - 1
+      : current.favoritesCount + 1,
+  });
+
+  const handleClickFavorite = async (slug: string) => {
     if (!isLoggedIn) {
       Router.push(`/user/login`);
       return;
     }
 
-    setPreview({
-      ...preview,
-      favorited: !preview.favorited,
-      favoritesCount: preview.favorited
-        ? preview.favoritesCount - 1
-        : preview.favoritesCount + 1,
-    });
+    const optimistic = toggleFavorite(preview);
+    setPreview(optimistic);
 
     try {
       if (preview.favorited) {
@@ -56,18 +64,12 @@ const ArticlePreview = ({ article }) => {
           }
         );
       }
-    } catch (error) {
-      setPreview({
-        ...preview,
-        favorited: !preview.favorited,
-        favoritesCount: preview.favorited
-          ? preview.favoritesCount - 1
-          : preview.favoritesCount + 1,
-      });
+    } catch {
+      setPreview(preview);
     }
   };
 
-  if (!article) return;
+  if (!article) return null;
 
   return (
     <div className="article-preview" style={{ padding: "1.5rem 0.5rem" }}>
@@ -88,7 +90,7 @@ const ArticlePreview = ({ article }) => {
             as={`/profile/${preview.author.username}`}
             className="author"
           >
-            <span onClick={() => setPage(0)}>{preview.author.username}</span>
+            <span onClick={() => setPage?.(0)}>{preview.author.username}</span>
           </CustomLink>
           <span className="date">
             {new Date(preview.createdAt).toDateString()}
@@ -115,41 +117,37 @@ const ArticlePreview = ({ article }) => {
         <h1>{preview.title}</h1>
         <p>{preview.description}</p>
         <span>Read more...</span>
-        <ul className="tag-list" style={{ maxWidth: "100%" }}>
-          {preview.tagList.map((tag, index) => {
-            return (
-              <Link href={`/?tag=${tag}`} as={`/?tag=${tag}`} key={index}>
-                <li
-                  className="tag-default tag-pill tag-outline"
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseOver={() => {
-                    setHover(true);
-                    setCurrentIndex(index);
-                  }}
-                  onMouseLeave={() => {
-                    setHover(false);
-                    setCurrentIndex(-1);
-                  }}
-                  style={{
-                    borderColor:
-                      hover && currentIndex === index ? "#5cb85c" : "initial",
-                  }}
-                >
-                  <span
-                    style={{
-                      color:
-                        hover && currentIndex === index ? "#5cb85c" : "inherit",
-                    }}
-                    onClick={() => setPage(0)}
-                  >
-                    {tag}
-                  </span>
-                </li>
-              </Link>
-            );
-          })}
-        </ul>
       </CustomLink>
+      <ul className="tag-list" style={{ maxWidth: "100%" }}>
+        {preview.tagList.map((tag, index) => (
+          <li
+            key={tag}
+            className="tag-default tag-pill tag-outline"
+            onMouseOver={() => {
+              setHover(true);
+              setCurrentIndex(index);
+            }}
+            onMouseLeave={() => {
+              setHover(false);
+              setCurrentIndex(-1);
+            }}
+            style={{
+              borderColor:
+                hover && currentIndex === index ? "#5cb85c" : "initial",
+            }}
+          >
+            <Link
+              href={`/?tag=${tag}`}
+              style={{
+                color: hover && currentIndex === index ? "#5cb85c" : "inherit",
+              }}
+              onClick={() => setPage?.(0)}
+            >
+              {tag}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

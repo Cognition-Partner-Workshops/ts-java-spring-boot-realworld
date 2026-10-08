@@ -1,16 +1,30 @@
 import React from "react";
 
-const TagInput = ({ tagList, addTag, removeTag }) => {
+interface TagInputProps {
+  tagList: string[];
+  addTag: (tag: string) => void;
+  removeTag: (tag: string) => void;
+}
+
+const TagInput = ({ tagList, addTag, removeTag }: TagInputProps) => {
   const [tag, setTag] = React.useState("");
 
-  const changeTagInput = (e) => setTag(e.target.value);
+  const changeTagInput = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setTag(e.target.value);
 
-  const handleTagInputKeyDown = (e) => {
-    switch (e.keyCode) {
-      case 13: // Enter
-      case 9: // Tab
-      case 188: // Comma
-        if (e.keyCode !== 9) e.preventDefault();
+  const handleAddTag = () => {
+    if (tag) {
+      addTag(tag);
+      setTag("");
+    }
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    switch (e.key) {
+      case "Enter":
+      case "Tab":
+      case ",":
+        if (e.key !== "Tab") e.preventDefault();
         handleAddTag();
         break;
       default:
@@ -18,15 +32,8 @@ const TagInput = ({ tagList, addTag, removeTag }) => {
     }
   };
 
-  const handleAddTag = () => {
-    if (!!tag) {
-      addTag(tag);
-      setTag("");
-    }
-  };
-
-  const handleRemoveTag = (tag) => {
-    removeTag(tag);
+  const handleRemoveTag = (value: string) => {
+    removeTag(value);
   };
 
   return (
@@ -43,13 +50,15 @@ const TagInput = ({ tagList, addTag, removeTag }) => {
         />
 
         <div className="tag-list">
-          {tagList.map((tag, index) => (
-            <span className="tag-default tag-pill" key={index}>
+          {tagList.map((value) => (
+            <span className="tag-default tag-pill" key={value}>
               <i
                 className="ion-close-round"
-                onClick={() => handleRemoveTag(tag)}
+                role="button"
+                aria-label={`Remove tag ${value}`}
+                onClick={() => handleRemoveTag(value)}
               />
-              {tag}
+              {value}
             </span>
           ))}
         </div>

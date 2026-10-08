@@ -7,7 +7,7 @@ import CommentInput from "./CommentInput";
 import ErrorMessage from "../common/ErrorMessage";
 import LoadingSpinner from "../common/LoadingSpinner";
 
-import { CommentType } from "../../lib/types/commentType";
+import { Comments, CommentType } from "../../lib/types/commentType";
 import { SERVER_BASE_URL } from "../../lib/utils/constant";
 import fetcher from "../../lib/utils/fetcher";
 
@@ -17,19 +17,19 @@ const CommentList = () => {
     query: { pid },
   } = router;
 
-  const { data, error } = useSWR(
+  const { data, error } = useSWR<Comments>(
     `${SERVER_BASE_URL}/articles/${pid}/comments`,
     fetcher
   );
-
-  if (!data) {
-    return <LoadingSpinner />;
-  }
 
   if (error)
     return (
       <ErrorMessage message="Cannot load comments related to this article..." />
     );
+
+  if (!data) {
+    return <LoadingSpinner />;
+  }
 
   const { comments } = data;
 

@@ -1,17 +1,18 @@
 import React from "react";
+import useSWR from "swr";
 
 import CustomLink from "../common/CustomLink";
 import LoadingSpinner from "../common/LoadingSpinner";
+import ErrorMessage from "../common/ErrorMessage";
 import { usePageDispatch } from "../../lib/context/PageContext";
-import useSWR from "swr";
+import { TagList } from "../../lib/types/tagType";
 import { SERVER_BASE_URL } from "../../lib/utils/constant";
 import fetcher from "../../lib/utils/fetcher";
-import ErrorMessage from "../common/ErrorMessage";
 
 const Tags = () => {
   const setPage = usePageDispatch();
-  const handleClick = React.useCallback(() => setPage(0), []);
-  const { data, error } = useSWR(`${SERVER_BASE_URL}/tags`, fetcher);
+  const handleClick = React.useCallback(() => setPage?.(0), [setPage]);
+  const { data, error } = useSWR<TagList>(`${SERVER_BASE_URL}/tags`, fetcher);
 
   if (error) return <ErrorMessage message="Cannot load popular tags..." />;
   if (!data) return <LoadingSpinner />;

@@ -3,9 +3,14 @@ import React from "react";
 import ArticleActions from "./ArticleActions";
 import CustomImage from "../common/CustomImage";
 import CustomLink from "../common/CustomLink";
+import { ArticleType } from "../../lib/types/articleType";
 
-const ArticleMeta = ({ article }) => {
-  if (!article) return;
+interface ArticleMetaProps {
+  article: ArticleType;
+}
+
+const ArticleMeta = ({ article }: ArticleMetaProps) => {
+  if (!article) return null;
 
   return (
     <div className="article-meta">
