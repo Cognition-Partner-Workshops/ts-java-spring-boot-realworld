@@ -37,7 +37,7 @@ description: >
 
 ```
 ts-java-spring-boot-realworld/
-├── build.gradle              # Gradle build (Spring Boot 2.6.3, Java 11)
+├── build.gradle              # Gradle build (Spring Boot 3.5.16, Java 21)
 ├── gradlew / gradlew.bat     # Gradle wrapper
 ├── src/main/java/io/spring/
 │   ├── api/                  # REST controllers (@RestController)
@@ -72,23 +72,26 @@ ts-java-spring-boot-realworld/
 └── frontend/                 # Next.js frontend (separate, optional)
 ```
 
-## Key Dependencies (current baseline — Spring Boot 2.6.3 / Java 11)
+## Key Dependencies (current — Spring Boot 3.5.16 / Java 21, modernized from 2.6.3 / Java 11)
 
-| Artifact | Version | Upgrade Target (Boot 3.5.x) |
-|----------|---------|----------------------------|
-| `org.springframework.boot` (plugin) | 2.6.3 | 3.5.x |
-| `io.spring.dependency-management` | 1.0.11 | 1.1.x |
-| Java `sourceCompatibility` | 11 | 21 |
-| `com.netflix.dgs.codegen` | 5.0.6 | 7.x+ |
-| `com.netflix.graphql.dgs:graphql-dgs-spring-boot-starter` | 4.9.21 | 8.x+ (Boot 3 compatible) |
-| `org.mybatis.spring.boot:mybatis-spring-boot-starter` | 2.2.2 | 3.0.x |
-| `io.jsonwebtoken:jjwt-api` | 0.11.2 | 0.12.x |
-| `joda-time:joda-time` | 2.10.13 | remove → `java.time` |
-| `org.xerial:sqlite-jdbc` | 3.36.0.3 | 3.45.x+ |
-| `io.rest-assured:spring-mock-mvc` (test) | 4.5.1 | 5.4.x |
-| `com.diffplug.spotless` | 6.2.1 | 6.25.x |
-| `org.flywaydb:flyway-core` | (managed) | 10.x (Boot 3.5 managed) |
-| Selenium (test) | 4.15.0 | 4.20.x |
+| Artifact | Before (baseline) | Current |
+|----------|-------------------|---------|
+| `org.springframework.boot` (plugin) | 2.6.3 | 3.5.16 |
+| `io.spring.dependency-management` | 1.0.11 | 1.1.7 |
+| Java (toolchain) | 11 | 21 |
+| Gradle wrapper | 7.4 | 8.14.6 |
+| `com.netflix.dgs.codegen` | 5.0.6 | 8.7.0 |
+| DGS runtime (`graphql-dgs-platform-dependencies` BOM, `graphql-dgs-spring-graphql-starter`) | 4.9.21 | 10.6.0 |
+| `org.mybatis.spring.boot:mybatis-spring-boot-starter` | 2.2.2 | 3.0.4 |
+| `io.jsonwebtoken:jjwt-*` | 0.11.2 | 0.12.6 |
+| `joda-time:joda-time` | 2.10.13 | removed → `java.time.Instant` (`InstantHandler`, `InstantSerializer`) |
+| `org.xerial:sqlite-jdbc` | 3.36.0.3 | 3.50.3.0 |
+| `io.rest-assured:spring-mock-mvc` (test) | 4.5.1 | 5.5.7 |
+| `com.diffplug.spotless` | 6.2.1 | 7.0.4 |
+| JaCoCo | 0.8.7 | 0.8.13 (0.80 instruction threshold; generated `io.spring.graphql.types/client/DgsConstants` excluded) |
+| `org.flywaydb:flyway-core` | (Boot 2.6 managed) | 11.x (Boot 3.5 managed) |
+| Selenium / WebDriverManager / TestNG (test) | 4.15.0 / 5.x / 7.x | 4.33.0 / 6.4.0 / 7.11.0 |
+| Frontend | Next 9.5 / React 16 / TS 3.9 / Node 16 | Next 15.5 / React 19 / TS 5.9 / Node 22, Vitest 5, ESLint 9 |
 
 ## General Approach: Java 11 → 21 / Spring Boot 2.x → 3.x Upgrades
 
