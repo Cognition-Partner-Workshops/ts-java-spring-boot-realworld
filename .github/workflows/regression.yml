@@ -1,0 +1,120 @@
+name: Regression Suite
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-gate:
+    name: Backend gate (JDK 21, JaCoCo >= 80%)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit, integration, format and coverage gate
+        run: ./gradlew clean test spotlessCheck jacocoTestReport jacocoTestCoverageVerification --no-daemon
+      - name: Upload backend reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-reports
+          path: |
+            build/reports/tests/test
+            build/reports/jacoco/test
+            build/test-results/test
+          if-no-files-found: warn
+
+  frontend-gate:
+    name: Frontend gate (Node 22)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+          if-no-files-found: warn
+
+  e2e-selenium:
+    name: E2E Selenium smoke (headless Chrome)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [backend-gate, frontend-gate]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+      - name: Start backend
+        run: |
+          rm -f dev.db
+          nohup ./gradlew bootRun --no-daemon > backend.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/tags && break
+            sleep 5
+          done
+          curl -sf http://localhost:8080/tags
+      - name: Start frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          nohup npm run start > ../frontend.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000/ > /dev/null && break
+            sleep 5
+          done
+          curl -sf http://localhost:3000/ > /dev/null
+      - name: Run Selenium smoke suite
+        run: ./gradlew seleniumTest --no-daemon
+      - name: Upload Selenium reports and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selenium-reports
+          path: |
+            build/reports/tests/seleniumTest
+            build/test-results/seleniumTest
+            build/reports/selenium
+            backend.log
+            frontend.log
+          if-no-files-found: warn
