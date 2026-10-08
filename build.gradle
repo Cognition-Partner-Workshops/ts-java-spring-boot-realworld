@@ -95,6 +95,9 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6',
                 'io.jsonwebtoken:jjwt-jackson:0.12.6'
     implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
+    // TEMPORARY bridge: core/application/infrastructure still use org.joda.time until the
+    // persistence/auth/time branch (java.time.Instant) merges. Orchestrator: drop at integration.
+    implementation 'joda-time:joda-time:2.10.13'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
