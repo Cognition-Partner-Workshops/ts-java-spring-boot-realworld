@@ -119,9 +119,14 @@ public class DefaultJwtServiceTest {
   public void should_get_null_with_tampered_signature() {
     String token = jwtService.toToken(user);
     String[] parts = token.split("\\.");
-    char last = parts[2].charAt(parts[2].length() - 1);
+    // flip a character in the middle: the final base64url char only carries 2 significant bits,
+    // so changing it may decode to the very same signature bytes
+    int index = parts[2].length() / 2;
+    char original = parts[2].charAt(index);
     String tamperedSignature =
-        parts[2].substring(0, parts[2].length() - 1) + (last == 'A' ? 'B' : 'A');
+        parts[2].substring(0, index)
+            + (original == 'A' ? 'B' : 'A')
+            + parts[2].substring(index + 1);
 
     Assertions.assertFalse(
         jwtService
