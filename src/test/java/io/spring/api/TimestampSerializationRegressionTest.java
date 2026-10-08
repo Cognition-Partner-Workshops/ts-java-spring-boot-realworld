@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.spring.JacksonCustomizations;
 import java.time.Instant;
 import java.util.Collections;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.junit.jupiter.api.Test;
 
 public class TimestampSerializationRegressionTest {
@@ -35,12 +33,10 @@ public class TimestampSerializationRegressionTest {
 
   @Test
   public void should_match_legacy_joda_format() throws Exception {
+    // Joda ISODateTimeFormat.dateTime().withZoneUTC() printed this instant (+08:00 source zone) as:
     long epochMillis = 1704458096789L;
-    String legacy =
-        mapper.writeValueAsString(new DateTime(epochMillis, DateTimeZone.forOffsetHours(8)));
-    String modern = mapper.writeValueAsString(Instant.ofEpochMilli(epochMillis));
-    assertEquals(legacy, modern);
-    assertEquals("\"2024-01-05T12:34:56.789Z\"", modern);
+    String legacy = "\"2024-01-05T12:34:56.789Z\"";
+    assertEquals(legacy, mapper.writeValueAsString(Instant.ofEpochMilli(epochMillis)));
   }
 
   @Test

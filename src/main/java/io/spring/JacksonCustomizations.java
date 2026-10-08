@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import org.joda.time.DateTime;
-import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,7 +22,6 @@ public class JacksonCustomizations {
 
   public static class RealWorldModules extends SimpleModule {
     public RealWorldModules() {
-      addSerializer(DateTime.class, new DateTimeSerializer());
       addSerializer(Instant.class, new InstantSerializer());
     }
   }
@@ -48,23 +45,6 @@ public class JacksonCustomizations {
         gen.writeNull();
       } else {
         gen.writeString(ISO_UTC_MILLIS.format(value));
-      }
-    }
-  }
-
-  public static class DateTimeSerializer extends StdSerializer<DateTime> {
-
-    protected DateTimeSerializer() {
-      super(DateTime.class);
-    }
-
-    @Override
-    public void serialize(DateTime value, JsonGenerator gen, SerializerProvider provider)
-        throws IOException {
-      if (value == null) {
-        gen.writeNull();
-      } else {
-        gen.writeString(ISODateTimeFormat.dateTime().withZoneUTC().print(value));
       }
     }
   }
