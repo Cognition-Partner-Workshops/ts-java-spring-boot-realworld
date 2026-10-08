@@ -13,7 +13,7 @@ Baseline: `b4ea605` (Spring Boot **2.6.3** / Gradle 7.4 / Java 11 — the README
 | 3 | persistence / JWT / java.time | `devin/1791491209-modernization-persistence-time` | #228 | `81e0c53` (+ follow-up `fa02b24`) |
 | 4 | GraphQL / DGS 10 | `devin/1791491209-modernization-graphql-dgs` | #229 | `14a4f39` |
 | 5 | frontend (Next 15 / React 19 / Vitest) | `devin/1791491209-modernization-frontend` | #230 | `01aa18a` |
-| 6 | cross-cutting regression suite | `devin/1791491209-modernization-regression-suite` | #231 | _see §6_ |
+| 6 | cross-cutting regression suite | `devin/1791491209-modernization-regression-suite` | #231 | `48e7828` |
 
 Per-merge gate results: [`integration/MERGE-LOG.md`](integration/MERGE-LOG.md).
 
@@ -86,7 +86,8 @@ Platform-session diff with rationale: [`platform/resolved-dependency-diff.md`](p
 | After persistence merge | 144 / 0 | 55.7% (gate fails) | — | — |
 | After GraphQL merge | 203 / 0 | **93.2%** (branch 79.5%) — **gate PASSES** | — | — |
 | After frontend merge | 203 / 0 | 93.2% | 110 / 0 | 94.23% stmts / 89.38% branches / 88.88% funcs / 95.52% lines (thresholds 85/80/80/85) |
-| After regression suite (Phase 2) | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| **Final — after regression suite (Phase 2)** `48e7828` | **384 / 0** | **94.2%** instruction / 84.7% branch / 100% classes — **gate PASSES** | **151 / 0** (17 files) | **97.42% stmts / 92.24% branches / 94.15% funcs / 98.72% lines** |
+| Selenium (`./gradlew seleniumTest`, JDK 21 backend + Next 15 `npm start`, run by the regression session) | 5 / 0 | — | — | — |
 
 JaCoCo policy: threshold **0.80 unchanged**; the only exclusions are DGS codegen output
 (`io/spring/graphql/types/**`, `io/spring/graphql/client/**`, `io/spring/graphql/DgsConstants*`). No production class or test was excluded or disabled.
@@ -117,7 +118,13 @@ npm's only fixes are a downgrade to `eslint-config-next@14` or `next@16` (outsid
 
 - npm: 7 dev-time findings (see §5) — resolvable only by Next 16 / eslint-config-next 14.
 - `frontend` images stay `<img>` + lazysizes (arbitrary remote avatar hosts) rather than `next/image`.
-- _Regression Phase 2 defects: TBD_
+- Production findings from the regression suite (documented, not patched — tests pin current behaviour where it is a contract, and were not altered to hide defects):
+  - `POST /users/login` with bad credentials returns 422 `{"message": ...}` rather than the RealWorld `{"errors": {...}}` shape (pre-existing; the Next 15 frontend now renders `message`, so the Selenium wrong-password test passes).
+  - GraphQL `updateUser` without a token returns `data: null` with an `UNAUTHENTICATED`-less error envelope in some paths (pre-existing).
+  - `RegisterForm` checks `status !== 200` while `POST /users` returns 201 (harmless, pre-existing).
+  - `getPageInfo` renders no page numbers when `total < limit` (pre-existing UI quirk).
+  - Fixed during modernization: `ArticleMapper.update` now persists `updated_at`; cursor pagination no longer mixes epoch-millis and TEXT timestamps (`InstantHandler` canonical UTC text); nested `comment.article` cast error no longer reproduces on DGS 10.
+- Baseline (`main`) CI skipped `jacocoTestCoverageVerification`; the modernized `gradle.yml` enforces it.
 
 ## 8. Verification commands (integration branch head)
 
