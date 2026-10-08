@@ -17,10 +17,8 @@ java {
 
 spotless {
     java {
-        target project.fileTree(project.rootDir) {
-            include '**/*.java'
-            exclude 'build/generated/**/*.*', 'build/generated-examples/**/*.*'
-        }
+        // Gradle 8 rejects a root fileTree target: spotlessJava would implicitly depend on compile/test outputs
+        target 'src/**/*.java'
         googleJavaFormat()
     }
 }
@@ -94,6 +92,8 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6',
                 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    // TEMPORARY until the persistence/time session replaces Joda with java.time: core/application still import org.joda.time
+    implementation 'joda-time:joda-time:2.14.0'
     implementation 'org.xerial:sqlite-jdbc:3.50.3.0'
 
     compileOnly 'org.projectlombok:lombok'
@@ -152,6 +152,7 @@ tasks.named('clean') {
 tasks.named('generateJava') {
     schemaPaths = ["${projectDir}/src/main/resources/schema"] // List of directories containing schema files
     packageName = 'io.spring.graphql' // The package name to use to generate sources
+    typeMapping = ["PageInfo": "graphql.relay.PageInfo"] // DGS 10 codegen emits its own PageInfo; datafetchers use graphql.relay.DefaultPageInfo
 }
 
 // Clean database before running to avoid Flyway migration conflicts
