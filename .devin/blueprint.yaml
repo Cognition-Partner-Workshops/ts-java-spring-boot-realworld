@@ -1,40 +1,44 @@
 # https://docs.devin.ai/onboard-devin/environment-yaml
-# One-time setup (e.g., install system tools, global CLIs).
-# README/build.gradle require Java 11, but the base snapshot ships Java 17.
+# Backend: Java 21 / Spring Boot 3.5 / Gradle 8.14 (toolchain pinned in build.gradle, .java-version = 21).
+# Frontend: Node 22 LTS (frontend/package.json engines), Next 15 / React 19 / Vitest.
 # One-time setup (e.g., install system tools, global CLIs).
 initialize: |
   export DEBIAN_FRONTEND=noninteractive
   sudo -E apt-get update -y -q
-  sudo -E apt-get install -y -q -o Dpkg::Options::=--force-confnew openjdk-11-jdk xclip
-  sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java
-  sudo update-alternatives --set javac /usr/lib/jvm/java-11-openjdk-amd64/bin/javac
-  echo "JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64" >> $ENVRC
-  export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+  sudo -E apt-get install -y -q -o Dpkg::Options::=--force-confnew openjdk-21-jdk xclip
+  sudo update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+  sudo update-alternatives --set javac /usr/lib/jvm/java-21-openjdk-amd64/bin/javac
+  echo "JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64" >> $ENVRC
+  export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
   ./gradlew --no-daemon dependencies > /dev/null 2>&1
+  source ~/.nvm/nvm.sh && nvm install 22 && nvm alias default 22
 # Install project dependencies (runs during builds, surfaced to agent at session start).
 maintenance: |
-  export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+  export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
   ./gradlew --no-daemon classes -x spotlessJava > /dev/null 2>&1
-  (cd frontend && npm install > /dev/null 2>&1)
+  source ~/.nvm/nvm.sh && nvm use 22 > /dev/null
+  (cd frontend && npm ci > /dev/null 2>&1)
 knowledge:
   - name: lint
     contents: |
       ./gradlew spotlessCheck
+      (cd frontend && npm run lint && npm run typecheck)
   - name: test
     contents: |
-      ./gradlew clean test -x jacocoTestCoverageVerification
+      # Full backend gate (JaCoCo 0.80 instruction threshold is enforced; generated DGS code excluded)
+      ./gradlew clean test spotlessCheck jacocoTestReport jacocoTestCoverageVerification
+      (cd frontend && npm test)
   - name: build
     contents: |
       ./gradlew clean build -x test
+      (cd frontend && npm run build)
   - name: run-backend
     contents: |
       # Spring Boot backend (REST + GraphQL) on http://localhost:8080
       # bootRun cleans + recreates SQLite dev.db with seed data each run.
-      # Verify: curl http://localhost:8080/tags
-      # Note: some shells default to a newer JDK (Lombok fails on 21) — pin Java 11 explicitly.
-      JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 ./gradlew bootRun
+      # Verify: curl http://localhost:8080/tags ; GraphiQL at http://localhost:8080/graphiql
+      JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew bootRun
   - name: run-frontend
     contents: |
-      # Optional Next.js frontend on http://localhost:3000 (talks to :8080).
-      # Needs the legacy OpenSSL provider flag on Node 18+/20.
-      (cd frontend && NODE_OPTIONS=--openssl-legacy-provider npm run dev)
+      # Next.js 15 frontend on http://localhost:3000 (talks to :8080). Requires Node 22 (nvm use 22).
+      (cd frontend && npm run dev)
