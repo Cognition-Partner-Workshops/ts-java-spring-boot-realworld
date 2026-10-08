@@ -2,11 +2,14 @@ package io.spring.api;
 
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import io.spring.JacksonCustomizations;
@@ -21,6 +24,8 @@ import io.spring.application.user.UserService;
 import io.spring.core.article.Article;
 import io.spring.core.article.ArticleRepository;
 import io.spring.core.user.User;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -202,6 +207,25 @@ public class SecurityRegressionTest extends TestWithCurrentUser {
         .delete("/articles/{slug}", "missing")
         .then()
         .statusCode(404);
+  }
+
+  @Test
+  public void should_not_require_authentication_for_error_dispatch() throws Exception {
+    // @ResponseStatus exceptions (403/404) are rendered through the container's ERROR dispatch
+    // to /error; if that dispatch were treated as a protected request the client would see 401.
+    mvc.perform(
+            get("/error")
+                .with(
+                    request -> {
+                      request.setDispatcherType(DispatcherType.ERROR);
+                      request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+                      request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/articles/x");
+                      return request;
+                    }))
+        .andExpect(result -> assertNotEquals(401, result.getResponse().getStatus()));
+
+    mvc.perform(get("/error"))
+        .andExpect(result -> assertEquals(401, result.getResponse().getStatus()));
   }
 
   private Map<String, Object> articleParam() {
