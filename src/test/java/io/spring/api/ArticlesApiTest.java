@@ -50,7 +50,7 @@ public class ArticlesApiTest extends TestWithCurrentUser {
     String title = "How to train your dragon";
     String slug = "how-to-train-your-dragon";
     String description = "Ever wonder how?";
-    String body = "You have to believe";
+    String body = String.join(" ", java.util.Collections.nCopies(450, "word"));
     List<String> tagList = asList("reactjs", "angularjs", "dragons");
     Map<String, Object> param = prepareParam(title, description, body, tagList);
 
@@ -87,6 +87,7 @@ public class ArticlesApiTest extends TestWithCurrentUser {
         .body("article.title", equalTo(title))
         .body("article.favorited", equalTo(false))
         .body("article.body", equalTo(body))
+        .body("article.readingTimeMinutes", equalTo(3))
         .body("article.favoritesCount", equalTo(0))
         .body("article.author.username", equalTo(user.getUsername()))
         .body("article.author.id", equalTo(null));

@@ -13,4 +13,10 @@
         </classes>
     </test>
 
+    <test name="Reading Time Badge">
+        <classes>
+            <class name="io.spring.selenium.tests.ReadingTimeBadgeTest"/>
+        </classes>
+    </test>
+
 </suite>

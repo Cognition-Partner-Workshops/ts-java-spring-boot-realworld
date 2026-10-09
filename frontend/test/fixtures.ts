@@ -26,6 +26,7 @@ export const article: ArticleType = {
   updatedAt: Date.UTC(2024, 0, 16),
   favorited: false,
   favoritesCount: 3,
+  readingTimeMinutes: 1,
   author,
 };
 

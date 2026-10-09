@@ -6,6 +6,7 @@ import useSWR from "swr";
 
 import CustomLink from "../common/CustomLink";
 import CustomImage from "../common/CustomImage";
+import ReadingTimeBadge from "./ReadingTimeBadge";
 import { usePageDispatch } from "../../lib/context/PageContext";
 import { ArticleType } from "../../lib/types/articleType";
 import checkLogin from "../../lib/utils/checkLogin";
@@ -95,6 +96,7 @@ const ArticlePreview = ({ article }: ArticlePreviewProps) => {
           <span className="date">
             {new Date(preview.createdAt).toDateString()}
           </span>
+          <ReadingTimeBadge minutes={preview.readingTimeMinutes} />
         </div>
 
         <div className="pull-xs-right">

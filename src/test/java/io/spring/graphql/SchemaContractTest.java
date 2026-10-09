@@ -50,6 +50,7 @@ class SchemaContractTest extends GraphQLTestBase {
           "Article.description",
           "Article.favorited",
           "Article.favoritesCount",
+          "Article.readingTimeMinutes",
           "Article.slug",
           "Article.tagList",
           "Article.title",

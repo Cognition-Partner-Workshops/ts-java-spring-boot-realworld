@@ -93,6 +93,7 @@ class GraphqlContractTest extends RegressionIntegrationTestBase {
                 "description",
                 "favorited",
                 "favoritesCount",
+                "readingTimeMinutes",
                 "slug",
                 "tagList",
                 "title",
@@ -129,7 +130,7 @@ class GraphqlContractTest extends RegressionIntegrationTestBase {
   void article_query_returns_full_shape_including_author_and_comments() {
     graphql(
             null,
-            "query($slug: String!) { article(slug: $slug) { slug title description body tagList createdAt updatedAt favorited favoritesCount author { username bio image following } comments(first: 10) { edges { cursor node { id body createdAt author { username } } } pageInfo { hasNextPage hasPreviousPage startCursor endCursor } } } }",
+            "query($slug: String!) { article(slug: $slug) { slug title description body tagList createdAt updatedAt favorited favoritesCount readingTimeMinutes author { username bio image following } comments(first: 10) { edges { cursor node { id body createdAt author { username } } } pageInfo { hasNextPage hasPreviousPage startCursor endCursor } } } }",
             map("slug", SEED_SLUG_SPRING_BOOT))
         .then()
         .statusCode(200)
@@ -141,6 +142,7 @@ class GraphqlContractTest extends RegressionIntegrationTestBase {
         .body("data.article.updatedAt", matchesPattern(ISO_UTC_MILLIS))
         .body("data.article.favorited", is(false))
         .body("data.article.favoritesCount", instanceOf(Integer.class))
+        .body("data.article.readingTimeMinutes", instanceOf(Integer.class))
         .body("data.article.author.username", equalTo(SEED_USER_JOHN))
         .body("data.article.author.following", is(false))
         .body("data.article.comments.edges", hasSize(greaterThanOrEqualTo(2)))

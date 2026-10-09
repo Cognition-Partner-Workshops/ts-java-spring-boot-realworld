@@ -1,6 +1,7 @@
 package io.spring.selenium.pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -30,6 +31,29 @@ public class EditorPage extends BasePage {
     type(driver.findElement(TITLE), title);
     type(driver.findElement(DESCRIPTION), description);
     type(driver.findElement(BODY), body);
+    return publishArticle(title, tags);
+  }
+
+  public HomePage publishLongArticle(
+      String title, String description, String body, String... tags) {
+    type(driver.findElement(TITLE), title);
+    type(driver.findElement(DESCRIPTION), description);
+    WebElement bodyField = waitForVisibility(driver.findElement(BODY));
+    ((JavascriptExecutor) driver)
+        .executeScript(
+            "const element = arguments[0];"
+                + "const setter = Object.getOwnPropertyDescriptor("
+                + "HTMLTextAreaElement.prototype, 'value').set;"
+                + "setter.call(element, arguments[1]);"
+                + "element.dispatchEvent(new Event('input', { bubbles: true }));"
+                + "element.setSelectionRange(element.value.length, element.value.length);",
+            bodyField,
+            body);
+    bodyField.sendKeys("!");
+    return publishArticle(title, tags);
+  }
+
+  private HomePage publishArticle(String title, String... tags) {
     WebElement tagInput = driver.findElement(TAGS);
     for (String tag : tags) {
       tagInput.sendKeys(tag);

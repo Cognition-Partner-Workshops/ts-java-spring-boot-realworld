@@ -1,6 +1,7 @@
 import React from "react";
 
 import ArticleActions from "./ArticleActions";
+import ReadingTimeBadge from "./ReadingTimeBadge";
 import CustomImage from "../common/CustomImage";
 import CustomLink from "../common/CustomLink";
 import { ArticleType } from "../../lib/types/articleType";
@@ -32,6 +33,7 @@ const ArticleMeta = ({ article }: ArticleMetaProps) => {
         <span className="date">
           {new Date(article.createdAt).toDateString()}
         </span>
+        <ReadingTimeBadge minutes={article.readingTimeMinutes} />
       </div>
 
       <ArticleActions article={article} />
