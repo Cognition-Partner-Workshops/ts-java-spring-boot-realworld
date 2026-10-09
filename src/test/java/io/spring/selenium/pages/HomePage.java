@@ -62,6 +62,11 @@ public class HomePage extends BasePage {
     return Integer.parseInt(button.getText().trim().replaceAll("[^0-9]", ""));
   }
 
+  public String readingTimeForTitle(String title) {
+    WebElement badge = previewForTitle(title).findElement(By.cssSelector(".reading-time-badge"));
+    return getText(wait.until(ExpectedConditions.visibilityOf(badge)));
+  }
+
   public HomePage favoriteArticle(String title) {
     int before = favoriteCountForTitle(title);
     click(previewForTitle(title).findElement(By.cssSelector("button")));

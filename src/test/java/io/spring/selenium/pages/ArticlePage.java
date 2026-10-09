@@ -9,6 +9,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 public class ArticlePage extends BasePage {
   private static final By TITLE = By.cssSelector(".article-page h1, .banner h1");
   private static final By BODY = By.cssSelector(".article-content");
+  private static final By READING_TIME_BADGE = By.cssSelector(".reading-time-badge");
   private static final By TAGS = By.cssSelector(".tag-list li");
   private static final By COMMENT_INPUT =
       By.cssSelector("textarea[placeholder='Write a comment...']");
@@ -36,6 +37,10 @@ public class ArticlePage extends BasePage {
 
   public String bodyText() {
     return getText(wait.until(ExpectedConditions.visibilityOfElementLocated(BODY)));
+  }
+
+  public String readingTimeBadge() {
+    return getText(wait.until(ExpectedConditions.visibilityOfElementLocated(READING_TIME_BADGE)));
   }
 
   public List<String> tags() {

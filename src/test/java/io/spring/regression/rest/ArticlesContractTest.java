@@ -49,6 +49,43 @@ class ArticlesContractTest extends RegressionIntegrationTestBase {
   }
 
   @Test
+  void reading_time_is_returned_for_created_article_and_article_lists() {
+    String token = janeToken();
+    String title = "Reading Time " + uniqueName("t");
+    String body = String.join(" ", java.util.Collections.nCopies(650, "word"));
+    Response created =
+        authed(token)
+            .body(
+                envelope(
+                    "article",
+                    map(
+                        "title",
+                        title,
+                        "description",
+                        "description of " + title,
+                        "body",
+                        body,
+                        "tagList",
+                        List.of("regression"))))
+            .post("/articles");
+
+    created.then().statusCode(200).body("article.readingTimeMinutes", equalTo(4));
+    String slug = created.jsonPath().getString("article.slug");
+
+    json()
+        .get("/articles/" + slug)
+        .then()
+        .statusCode(200)
+        .body("article.readingTimeMinutes", equalTo(4));
+    json()
+        .queryParam("author", SEED_USER_JANE)
+        .get("/articles")
+        .then()
+        .statusCode(200)
+        .body("articles.find { it.slug == '" + slug + "' }.readingTimeMinutes", equalTo(4));
+  }
+
+  @Test
   void post_articles_requires_authentication() {
     json()
         .body(envelope("article", map("title", "x", "description", "y", "body", "z")))

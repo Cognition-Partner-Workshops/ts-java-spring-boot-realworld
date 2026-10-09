@@ -83,6 +83,7 @@ class JsonSerializationTest {
     assertTrue(json.get("tagList").isArray());
     assertTrue(json.get("favorited").isBoolean());
     assertTrue(json.get("favoritesCount").isInt());
+    assertTrue(json.get("readingTimeMinutes").isInt());
     assertFalse(json.get("author").has("id"));
     assertTrue(json.get("author").has("following"));
 

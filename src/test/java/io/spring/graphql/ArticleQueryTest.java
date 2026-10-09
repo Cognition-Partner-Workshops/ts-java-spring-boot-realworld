@@ -6,6 +6,7 @@ import graphql.ExecutionResult;
 import io.spring.core.article.Article;
 import io.spring.core.user.FollowRelation;
 import io.spring.core.user.User;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,7 +27,8 @@ class ArticleQueryTest extends GraphQLTestBase {
 
   private static final String ARTICLE_QUERY =
       "query($slug: String!) { article(slug: $slug) { slug title description body tagList"
-          + " favorited favoritesCount createdAt updatedAt author { username bio image following } } }";
+          + " favorited favoritesCount readingTimeMinutes createdAt updatedAt"
+          + " author { username bio image following } } }";
 
   private static final String FEED_QUERY =
       "query($first: Int) { feed(first: $first) { edges { node { slug author { username } } }"
@@ -49,6 +51,7 @@ class ArticleQueryTest extends GraphQLTestBase {
         .containsExactlyInAnyOrder("gql-tag-a", "gql-tag-b");
     assertThat(result.get("favorited")).isEqualTo(false);
     assertThat(result.get("favoritesCount")).isEqualTo(0);
+    assertThat(result.get("readingTimeMinutes")).isEqualTo(1);
     assertThat((String) result.get("createdAt")).matches(ISO_UTC_MILLIS);
     assertThat((String) result.get("updatedAt")).matches(ISO_UTC_MILLIS);
     assertThat(result.get("createdAt")).isEqualTo(result.get("updatedAt"));
@@ -58,6 +61,21 @@ class ArticleQueryTest extends GraphQLTestBase {
     assertThat(profile.get("bio")).isEqualTo(author.getBio());
     assertThat(profile.get("image")).isEqualTo(author.getImage());
     assertThat(profile.get("following")).isEqualTo(false);
+  }
+
+  @Test
+  void article_reading_time_uses_the_article_body() {
+    User author = newUser();
+    String title = unique("gql-reading-time");
+    String body = String.join(" ", Collections.nCopies(450, "word"));
+    Article article = new Article(title, "description", body, List.of(), author.getId());
+    articleRepository.save(article);
+    anonymous();
+
+    Map<String, Object> result =
+        data(execute(ARTICLE_QUERY, vars("slug", article.getSlug())), "article");
+
+    assertThat(result.get("readingTimeMinutes")).isEqualTo(3);
   }
 
   @Test
