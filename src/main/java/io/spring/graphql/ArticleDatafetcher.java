@@ -383,6 +383,7 @@ public class ArticleDatafetcher {
         .description(articleData.getDescription())
         .favorited(articleData.isFavorited())
         .favoritesCount(articleData.getFavoritesCount())
+        .readingTimeMinutes(articleData.getReadingTimeMinutes())
         .slug(articleData.getSlug())
         .tagList(articleData.getTagList())
         .title(articleData.getTitle())

@@ -30,3 +30,15 @@ img.lazyload:not([src]) {
     font-size: 15px;
   }
 }
+
+.reading-time-badge {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 10rem;
+  background: #5cb85c;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
